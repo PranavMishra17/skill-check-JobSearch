@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Job Search · Pranav</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="alternate icon" type="image/png" href="job.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Warm espresso palette — no gradients, no cold-blue greys */
+    --bg:#100d09;
+    --panel:#1a160f;
+    --panel-hover:#221d14;
+    --border:#2e271c;
+    --border-soft:#231e16;
+    --fg:#e6dccb;
+    --fg-strong:#f3ecd9;
+    --muted:#8d8472;
+    --muted-strong:#a8a08c;
+    --link:#caa56d;
+    --apply-bg:#1c2418;
+    --apply-fg:#9eb380;
+    --apply-bg-hover:#252e1f;
+    --dismiss-fg:#b89d75;
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'Inter Tight',-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r:6px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 var(--sans);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;letter-spacing:-.003em}
+  h1,h2,h3,h4{font-family:var(--serif);font-weight:500;letter-spacing:-.01em}
+  .num,.scoreNum,.ring-num,.rank{font-family:var(--mono);font-feature-settings:"tnum"}
+  a{color:var(--link);text-decoration:none}
+  a:hover{text-decoration:underline}
+  select,input,button{background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font:inherit;outline:none}
+  select:focus,input:focus{border-color:#3a414e}
+  button{cursor:pointer}
+  button:hover{background:var(--panel-hover)}
+
+  /* ---------- Header ---------- */
+  /* Sticky topbar — solid black at top; Disco image (colored, no duotone) only when hero is scrolled past */
+  header{position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border);background:#0a0805;isolation:isolate}
+  header::before{content:"";position:absolute;inset:0;background:url('disco.jpg') center 28%/cover no-repeat;opacity:0;z-index:-2;pointer-events:none}
+  header::after{content:"";position:absolute;inset:0;background:rgba(10,8,5,.55);opacity:0;z-index:-1;pointer-events:none;box-shadow:inset 0 -1px 0 rgba(202,165,109,.18)}
+  header.scrolled::before{opacity:1}
+  header.scrolled::after{opacity:1}
+  .wrap{max-width:1480px;margin:0 auto;padding:0 24px}
+  .topbar{display:flex;align-items:center;gap:16px;padding:14px 0 8px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-style:italic;font-weight:500;font-size:19px;letter-spacing:-.015em;color:var(--fg-strong)}
+  .brand img{width:36px;height:36px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  /* Hero floating nav-island — sibling of hero, pulled up to overlap; sits above sticky header */
+  .hero-nav{position:relative;z-index:30;margin:-21px auto 0;width:fit-content;display:flex;background:#e7dcc0;border:1px solid #b09060;padding:4px;box-shadow:0 12px 28px -8px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.25)}
+  .hero-nav::before{content:"";position:absolute;inset:3px;border:1px solid rgba(35,27,16,.3);pointer-events:none}
+  .hero-nav a{position:relative;z-index:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#5a4628;padding:7px 16px;text-decoration:none;font-weight:500}
+  .hero-nav a:hover{color:#231b10}
+  .hero-nav a.active{background:#231b10;color:#e7dcc0}
+  .hero-nav a.active:hover{color:#e7dcc0}
+  .session-pill{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .session-pill .label{color:var(--muted);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+  .session-meta{padding:6px 12px 14px;color:var(--muted-strong);font-size:13.5px}
+
+  /* Pill-style filter bar — looks like a row of stamped chips */
+  .filterbar{display:flex;gap:8px;align-items:center;padding:10px 0 16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted-strong)}
+  .filterbar .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border:1px solid var(--border);background:rgba(20,15,10,.7);border-radius:3px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted-strong);transition:none}
+  .filterbar .pill.range-pill{padding:6px 11px 6px 11px}
+  .filterbar .pill .lbl{color:var(--muted);font-size:9.5px;letter-spacing:.16em}
+  .filterbar .pill select,.filterbar .pill input[type=range],.filterbar .pill input[type=search],.filterbar .pill input[type=checkbox]{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline:0;color:var(--fg-strong);font:inherit;font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:none;padding:0;margin:0;cursor:pointer}
+  .filterbar .pill select{padding-right:14px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23caa56d' stroke-width='1.6' fill='none' stroke-linecap='round'/></svg>");background-repeat:no-repeat;background-position:right center;background-size:9px 6px}
+  .filterbar .pill input[type=range]{width:110px;height:14px;accent-color:var(--link);vertical-align:middle}
+  .filterbar .pill input[type=search]{min-width:200px;color:var(--fg-strong)}
+  .filterbar .pill input[type=search]::placeholder{color:var(--muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+  .filterbar .pill input[type=checkbox]{width:11px;height:11px;border:1px solid var(--link);background:transparent;cursor:pointer;position:relative}
+  .filterbar .pill input[type=checkbox]:checked{background:var(--link)}
+  .filterbar .pill:hover{border-color:var(--amber-dim,#8e6f3e)}
+  .filterbar .pill:focus-within{border-color:var(--link)}
+  .filterbar .counts{margin-left:auto;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+
+  /* ---------- Layout: LEFT sidebar + jobs grid ---------- */
+  .layout{max-width:1480px;margin:0 auto;padding:18px 24px 80px;display:grid;grid-template-columns:280px 1fr;gap:24px;align-items:start}
+  @media (max-width:1100px){
+    .layout{grid-template-columns:1fr}
+    main{order:1}
+    .sidebar{order:2}
+  }
+
+  /* ---------- Sidebar (left) ---------- */
+  .sidebar{position:sticky;top:128px;max-height:calc(100vh - 150px);overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+  .side-panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--r)}
+  .side-panel > h3{margin:0;padding:12px 14px 8px;font-size:12px;font-weight:600;letter-spacing:.07em;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline}
+  .side-panel > h3 .cnt{color:var(--apply-fg);font-weight:500;text-transform:none;letter-spacing:0}
+  .dismissed-panel > summary{padding:12px 14px;font-size:12px;font-weight:600;letter-spacing:.07em;color:var(--muted);text-transform:uppercase;list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline}
+  .dismissed-panel > summary::-webkit-details-marker{display:none}
+  .dismissed-panel > summary::before{content:'▸';margin-right:6px;font-size:10px;color:var(--muted)}
+  .dismissed-panel[open] > summary::before{content:'▾'}
+  .dismissed-panel > summary .cnt{color:var(--dismiss-fg);font-weight:500;text-transform:none;letter-spacing:0}
+  .side-empty{color:var(--muted);font-size:12.5px;padding:0 14px 12px;font-style:italic}
+  .applied-item{padding:8px 14px;border-top:1px solid var(--border-soft);display:flex;flex-direction:column;gap:2px}
+  .side-panel .applied-item:first-of-type{border-top:none}
+  .dismissed-panel .applied-item:first-of-type{border-top:1px solid var(--border-soft)}
+  .applied-item .a-title{font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .applied-item .a-co{font-size:11.5px;color:var(--muted-strong)}
+  .applied-item .a-when{font-size:10.5px;color:var(--muted)}
+  .applied-item .a-row{display:flex;align-items:center;gap:8px}
+  .applied-item .a-row a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--fg)}
+  .applied-item .a-row a:hover{color:var(--link)}
+  .unapply{font-size:12px;color:var(--muted);cursor:pointer;background:transparent;border:none;padding:3px 6px;line-height:1}
+  .unapply:hover{color:var(--fg);background:var(--panel-hover);border-radius:3px}
+
+  /* ---------- Jobs grid ---------- */
+  .jobs{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  @media (max-width:760px){.jobs{grid-template-columns:1fr}}
+
+  .job{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:48px 1fr;gap:14px;min-width:0}
+  .job.applied{opacity:.55}
+  .job.hidden{display:none}
+
+  .dismiss-btn{position:absolute;top:8px;right:8px;width:22px;height:22px;border:none;background:transparent;color:var(--muted);font-size:18px;line-height:1;border-radius:4px;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;opacity:.55}
+  .dismiss-btn:hover{background:var(--panel-hover);color:var(--fg);opacity:1}
+
+  .score-cell{display:flex;justify-content:center;padding-top:2px}
+  .ring{position:relative;width:44px;height:44px}
+  .ring svg{display:block;width:44px;height:44px;transform:rotate(-90deg)}
+  .ring .ring-bg{stroke:var(--border)}
+  .ring .ring-fg{stroke-linecap:round}
+  .ring .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--fg-strong);font-variant-numeric:tabular-nums}
+
+  .info-cell{min-width:0;display:flex;flex-direction:column;gap:4px;padding-right:18px}
+  .job .rank{font-size:11px;color:var(--muted);letter-spacing:.04em;font-variant-numeric:tabular-nums}
+  .job .title{font-family:var(--serif);font-weight:500;font-size:16.5px;line-height:1.3;color:var(--fg-strong);min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:0}
+  .job .title a{color:inherit}
+  .job .title a:hover{color:var(--link);text-decoration:none}
+  .job .company{font-size:13px;color:var(--muted-strong);font-weight:500}
+  .job .meta{font-size:12px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:6px}
+  .job .meta span{white-space:nowrap}
+  .job .meta .sep{opacity:.4;margin:0 2px}
+  .badge{display:inline-block;padding:1px 6px;border-radius:3px;background:#1d2129;font-size:11px;color:var(--muted)}
+  .badge.spon-ok{color:#a8c4a8;background:#1a2620}
+  .badge.spon-no{color:#c4a098;background:#2a1f1c}
+  .desc{font-size:12.5px;color:#aab1bd;margin-top:6px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .actions{margin-top:10px;display:flex;gap:8px;align-items:center}
+  .btn{font-size:12px;padding:5px 11px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--fg);cursor:pointer}
+  .btn-apply{background:var(--apply-bg);border-color:#2c4032;color:var(--apply-fg);font-weight:500}
+  .btn-apply:hover{background:var(--apply-bg-hover)}
+  .applied-flag{font-size:11px;color:var(--apply-fg);background:#1a2620;padding:3px 7px;border-radius:3px;border:1px solid #2c4032}
+  .unmark-inline{font-size:11px;color:var(--muted);text-decoration:none;cursor:pointer;background:transparent;border:none;padding:3px 6px}
+  .unmark-inline:hover{color:var(--fg);text-decoration:underline}
+
+  /* ---------- Crimebook hero ---------- */
+  .hero{position:relative;height:340px;background:#0a0805;border-bottom:1px solid var(--border)}
+  .hero > .hero-img,.hero > .hero-lines,.hero > .hero-grain,.hero > .hero-vignette{position:absolute;inset:0;pointer-events:none}
+  .hero-img{position:absolute;inset:0;background:url('disco.jpg') center 38%/cover no-repeat;filter:url(#duotone-noir);opacity:.88}
+  .hero-lines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(0,0,0,.10) 2px 3px);mix-blend-mode:multiply;pointer-events:none;opacity:.55}
+  .hero-grain{position:absolute;inset:0;mix-blend-mode:overlay;opacity:.16;pointer-events:none}
+  .hero-vignette{position:absolute;inset:0;box-shadow:inset 0 0 240px 70px rgba(8,5,2,.92);pointer-events:none}
+  .hero-spine{position:absolute;top:18px;right:24px;font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#d8c8a3;text-transform:uppercase;text-align:right;mix-blend-mode:screen;opacity:.82;line-height:1.6}
+  .hero-spine .stars{letter-spacing:.4em;color:var(--link);margin-bottom:3px}
+  .hero-label{position:absolute;left:34px;bottom:28px;width:420px;background:#e7dcc0;color:#231b10;padding:18px 22px 16px;border:1px solid #b09060;box-shadow:0 18px 36px -8px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04) inset;font-family:var(--sans)}
+  .hero-label::before{content:"";position:absolute;inset:6px;border:1px solid rgba(35,27,16,.32);pointer-events:none}
+  .hero-label .corner{position:absolute;width:9px;height:9px;border:1px solid #5a4628}
+  .hero-label .corner.tl{top:-1px;left:-1px;border-right:none;border-bottom:none}
+  .hero-label .corner.tr{top:-1px;right:-1px;border-left:none;border-bottom:none}
+  .hero-label .corner.bl{bottom:-1px;left:-1px;border-right:none;border-top:none}
+  .hero-label .corner.br{bottom:-1px;right:-1px;border-left:none;border-top:none}
+  .hero-label .stamp-row{display:flex;align-items:baseline;gap:14px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#5a4628;border-bottom:1px solid rgba(35,27,16,.35);padding-bottom:8px;margin-bottom:12px}
+  .hero-label .stamp-row .right{margin-left:auto}
+  .hero-label h1{font-family:var(--serif);font-weight:600;font-size:38px;line-height:.92;color:#231b10;letter-spacing:-.022em;margin:0 0 6px}
+  .hero-label h1 em{font-style:italic;font-weight:500;color:#7a5520}
+  .hero-label .byline{font-family:var(--serif);font-style:italic;font-size:13.5px;color:#3b2e1c;margin-top:12px;line-height:1.45}
+  .hero-label .meta-line{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7a623e;margin-top:14px;padding-top:8px;border-top:1px dashed rgba(35,27,16,.45)}
+  .hero-label .meta-line .num{font-family:var(--mono);font-size:10px;color:#7a623e;letter-spacing:.12em}
+  @media (max-width:780px){
+    .hero{height:auto;padding-bottom:24px}
+    .hero-label{position:relative;left:auto;right:auto;bottom:auto;margin:200px 18px 0;width:auto}
+    .hero-spine{top:12px;right:16px}
+  }
+
+  /* ---------- Empty + footer ---------- */
+  .emptyState{text-align:center;color:var(--muted);padding:40px 0 60px;font-style:italic}
+  .disco-empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:30px 20px 40px;text-align:center}
+  .disco-empty img{width:min(360px,80%);border-radius:8px;filter:saturate(.85) brightness(.92);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  .disco-empty .cap{color:var(--muted-strong);font-size:13.5px;font-style:italic;max-width:380px;line-height:1.5}
+  .side-empty.disco{padding:12px 14px 16px;text-align:center}
+  .side-empty.disco img{width:100%;max-width:200px;border-radius:5px;filter:saturate(.7) brightness(.85);opacity:.88;margin-bottom:8px}
+  .footer{color:var(--muted);font-size:12px;text-align:center;margin-top:30px;padding-top:18px;border-top:1px solid var(--border-soft);display:flex;align-items:center;justify-content:center;gap:10px}
+  .footer .disco-sig{width:18px;height:18px;border-radius:50%;object-fit:cover;filter:saturate(.6);opacity:.7}
+  kbd{background:var(--panel-hover);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;font-family:ui-monospace,monospace}
+  details summary{cursor:pointer;color:var(--muted);font-size:12px;user-select:none;padding:8px 0}
+  .droplog{color:var(--muted);font-size:12px;padding:8px 0}
+  .droplog code{background:var(--panel-hover);padding:1px 5px;border-radius:3px;margin-right:2px}
+</style>
+</head>
+<body>
+
+<!-- Crimebook SVG filter definitions (duotone + grain) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="grain-amber" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.3" numOctaves="2" stitchTiles="stitch" seed="3"/>
+      <feColorMatrix values="0 0 0 0 .79  0 0 0 0 .64  0 0 0 0 .43  0 0 0 0.5 0"/>
+    </filter>
+    <filter id="duotone-noir" x="0" y="0" width="100%" height="100%">
+      <feColorMatrix type="matrix" values="0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0.299 0.587 0.114 0 0  0 0 0 1 0"/>
+      <feComponentTransfer>
+        <feFuncR tableValues="0.063 0.93"/>
+        <feFuncG tableValues="0.051 0.86"/>
+        <feFuncB tableValues="0.035 0.71"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
+
+<section class="hero" aria-labelledby="heroTitle">
+  <div class="hero-img"></div>
+  <div class="hero-lines"></div>
+  <svg class="hero-grain" preserveAspectRatio="none" width="100%" height="100%"><rect width="100%" height="100%" filter="url(#grain-amber)"/></svg>
+  <div class="hero-vignette"></div>
+  <div class="hero-spine">
+    <div class="stars">★ ★ ★ ★</div>
+    Archive No. III · Volume I
+  </div>
+  <div class="hero-label">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="stamp-row">
+      <span>Job Search</span>
+      <span class="right">Filed · <span id="heroFiled">today</span></span>
+    </div>
+    <h1 id="heroTitle">A leadge<em>r</em><br>of leads.</h1>
+    <div class="byline">A daily report of who is hiring, who has been contacted, and who is no longer pulling their weight in the applied column.</div>
+    <div class="meta-line">
+      <span>Vol. I</span>
+      <span>No. <span id="heroIssue" class="num">17</span></span>
+      <span><span id="heroCount" class="num">34</span> leads</span>
+      <span>OPT &middot; STEM</span>
+    </div>
+  </div>
+</section>
+<nav class="hero-nav">
+  <a href="index.html" class="active">Jobs</a>
+  <a href="hires.html">Hires</a>
+</nav>
+
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <img src="favicon.svg" alt="">
+        <span>Job Search</span>
+      </div>
+      <div class="session-pill">
+        <span class="label">Scan</span>
+        <select id="sessionSel"></select>
+      </div>
+    </div>
+    <div class="session-meta" id="sessionMeta">—</div>
+    <div class="filterbar">
+      <span class="pill range-pill"><span class="lbl">Min</span><input type="range" id="minScore" min="0" max="100" step="5" value="60"><span id="minScoreVal">60</span></span>
+      <span class="pill"><span class="lbl">Sponsor</span>
+        <select id="sponsorFilter">
+          <option value="any">Any</option>
+          <option value="available">Sponsors visa</option>
+          <option value="unknown">Not stated</option>
+        </select>
+      </span>
+      <span class="pill"><span class="lbl">Arrangement</span>
+        <select id="arrFilter">
+          <option value="any">Any</option>
+          <option value="Remote">Remote</option>
+          <option value="Hybrid">Hybrid</option>
+          <option value="On-site">On-site</option>
+        </select>
+      </span>
+      <span class="pill"><span class="lbl">Years</span>
+        <select id="expFilter">
+          <option value="any">Any</option>
+          <option value="0-2">0–2 yrs</option>
+          <option value="2-5">2–5 yrs</option>
+        </select>
+      </span>
+      <span class="pill"><span class="lbl">Hide applied</span><input type="checkbox" id="hideApplied" checked></span>
+      <span class="pill"><input type="search" id="search" placeholder="Search…"></span>
+      <span class="counts" id="counts"></span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <section class="side-panel">
+      <h3>Applied <span class="cnt" id="appliedCnt">0</span></h3>
+      <div id="appliedList"></div>
+    </section>
+    <details class="side-panel dismissed-panel" id="dismissedPanel">
+      <summary>Dismissed <span class="cnt" id="dismissedCnt">0</span></summary>
+      <div id="dismissedList"></div>
+    </details>
+  </aside>
+
+  <main>
+    <div class="jobs" id="jobs"></div>
+    <details>
+      <summary>Why N jobs were dropped before scoring</summary>
+      <div class="droplog" id="droplog"></div>
+    </details>
+    <div class="footer">
+      <img class="disco-sig" src="disco.jpg" alt="">
+      <span>Click <strong>Apply</strong> auto-marks · click <strong>×</strong> to dismiss · <kbd>j</kbd>/<kbd>k</kbd> step, <kbd>Enter</kbd> applies, <kbd>x</kbd> dismisses</span>
+    </div>
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const sessions = (window.JOB_SESSIONS || []).slice();
+
+  // Hero stamps — always reflect the LATEST scan, regardless of which session is currently viewed
+  (function populateHero() {
+    const latest = sessions[0];
+    if (!latest) return;
+    try {
+      const d = new Date(latest.date + 'T00:00:00');
+      const filed = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '');
+      const issueNo = String(sessions.length).padStart(2, '0');
+      const leads = (latest.crawled ?? latest.jobs?.length ?? 0);
+      const hf = document.getElementById('heroFiled'); if (hf) hf.textContent = filed;
+      const hi = document.getElementById('heroIssue'); if (hi) hi.textContent = issueNo;
+      const hc = document.getElementById('heroCount'); if (hc) hc.textContent = leads;
+    } catch (e) {}
+  })();
+
+  // Scroll-triggered topbar bg — Disco image fades in only after the hero scrolls out of view
+  (function setupHeaderScroll() {
+    const heroEl = document.querySelector('.hero');
+    const headerEl = document.querySelector('header');
+    if (!heroEl || !headerEl || !('IntersectionObserver' in window)) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      headerEl.classList.toggle('scrolled', !entry.isIntersecting);
+    }, { threshold: 0, rootMargin: '-1px 0px 0px 0px' });
+    obs.observe(heroEl);
+  })();
+
+  if (sessions.length === 0) {
+    document.getElementById('jobs').innerHTML = '<div class="emptyState">No sessions yet — run <code>/job-search</code> to populate.</div>';
+    document.getElementById('sessionMeta').textContent = '(empty)';
+    return;
+  }
+
+  // ---- Persisted state ----
+  const LS_STATE = 'jobs_ui_state_v3';
+  const LS_APPLIED = 'jobs_ui_applied_v2';
+  const LS_DISMISSED = 'jobs_ui_dismissed_v1';
+  const state = Object.assign({
+    sessionId: sessions[0].id,
+    minScore: 60,
+    sponsor: 'any', arr: 'any', exp: 'any',
+    hideApplied: true, search: ''
+  }, JSON.parse(localStorage.getItem(LS_STATE) || '{}'));
+
+  let applied = JSON.parse(localStorage.getItem(LS_APPLIED) || '{}');
+  if (Array.isArray(applied)) applied = {};
+  let dismissed = JSON.parse(localStorage.getItem(LS_DISMISSED) || '{}');
+  if (Array.isArray(dismissed)) dismissed = {};
+
+  const saveState = () => localStorage.setItem(LS_STATE, JSON.stringify(state));
+  const saveApplied = () => localStorage.setItem(LS_APPLIED, JSON.stringify(applied));
+  const saveDismissed = () => localStorage.setItem(LS_DISMISSED, JSON.stringify(dismissed));
+
+  // ---- Helpers ----
+  const escapeHtml = s => (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const jobKey = (j, sid) => `${sid}::${j.company}::${j.title}`;
+  const $ = id => document.getElementById(id);
+
+  function scoreColor(s) {
+    const t = Math.max(0, Math.min(1, (s - 50) / 50));
+    const hue = t * 105;
+    return `hsl(${hue}, 32%, 52%)`;
+  }
+
+  function sessionLabel(s) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(s.date + 'T00:00:00');
+    const diff = Math.round((today - d) / 86400000);
+    let dayLabel;
+    if (diff === 0) dayLabel = 'Today';
+    else if (diff === 1) dayLabel = 'Yesterday';
+    else if (diff > 0 && diff < 7) dayLabel = `${diff} days ago`;
+    else dayLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const wd = (s.window || '').replace(/d$/, '');
+    return `${dayLabel} · last ${wd} days · ${s.jobs.length} jobs`;
+  }
+  function sessionLongLabel(s) {
+    const d = new Date(s.date + 'T00:00:00');
+    const niceDate = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diff = Math.round((today - d) / 86400000);
+    const rel = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : `${diff} days ago`;
+    const wd = (s.window || '').replace(/d$/, '');
+    return `${rel}, ${niceDate} — covering the last ${wd} days · ${s.crawled} crawled → ${s.jobs.length} surfaced`;
+  }
+  function relTimeSince(ts) {
+    const diff = (Date.now() - ts) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.round(diff/60) + 'm ago';
+    if (diff < 86400) return Math.round(diff/3600) + 'h ago';
+    if (diff < 86400*7) return Math.round(diff/86400) + 'd ago';
+    return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  // ---- Session selector ----
+  const sel = $('sessionSel');
+  sessions.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.id;
+    o.textContent = sessionLabel(s);
+    sel.appendChild(o);
+  });
+  if (!sessions.find(s => s.id === state.sessionId)) state.sessionId = sessions[0].id;
+  sel.value = state.sessionId;
+
+  // ---- Filter control init ----
+  $('minScore').value = state.minScore; $('minScoreVal').textContent = state.minScore;
+  $('sponsorFilter').value = state.sponsor;
+  $('arrFilter').value = state.arr;
+  $('expFilter').value = state.exp;
+  $('hideApplied').checked = state.hideApplied;
+  $('search').value = state.search;
+
+  const onChange = () => {
+    state.sessionId = sel.value;
+    state.minScore = +$('minScore').value;
+    state.sponsor = $('sponsorFilter').value;
+    state.arr = $('arrFilter').value;
+    state.exp = $('expFilter').value;
+    state.hideApplied = $('hideApplied').checked;
+    state.search = $('search').value;
+    $('minScoreVal').textContent = state.minScore;
+    saveState();
+    render();
+  };
+  ['change','input'].forEach(ev => {
+    sel.addEventListener(ev, onChange);
+    ['minScore','sponsorFilter','arrFilter','expFilter','hideApplied','search'].forEach(id => $(id).addEventListener(ev, onChange));
+  });
+
+  // ---- Renderers ----
+  function ringSvg(score) {
+    const r = 17, c = 2 * Math.PI * r;
+    const offset = c * (1 - Math.max(0, Math.min(100, score)) / 100);
+    return `
+      <div class="ring">
+        <svg viewBox="0 0 44 44">
+          <circle class="ring-bg" cx="22" cy="22" r="${r}" fill="none" stroke-width="3"/>
+          <circle class="ring-fg" cx="22" cy="22" r="${r}" fill="none" stroke-width="3"
+                  stroke="${scoreColor(score)}"
+                  stroke-dasharray="${c.toFixed(2)}"
+                  stroke-dashoffset="${offset.toFixed(2)}"/>
+        </svg>
+        <div class="ring-num">${score}</div>
+      </div>`;
+  }
+
+  function renderList(map, containerId, countId, restoreLabel) {
+    const list = Object.entries(map)
+      .map(([k, v]) => ({ key: k, ...v }))
+      .sort((a, b) => (b.at || 0) - (a.at || 0));
+    $(countId).textContent = list.length;
+    const container = $(containerId);
+    if (list.length === 0) {
+      const msg = restoreLabel === 'Restore'
+        ? 'Nothing dismissed yet.'
+        : 'Nothing yet. Apply to a role to track it here.';
+      container.innerHTML = restoreLabel === 'Restore'
+        ? `<div class="side-empty">${msg}</div>`
+        : `<div class="side-empty disco"><img src="disco.jpg" alt=""><div>Waiting for your next move.</div></div>`;
+      return;
+    }
+    container.innerHTML = list.map(item => `
+      <div class="applied-item">
+        <div class="a-row">
+          <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" title="${escapeHtml(item.title)} — ${escapeHtml(item.company)}">${escapeHtml(item.title)}</a>
+          <button class="unapply" data-key="${escapeHtml(item.key)}" data-list="${containerId}" title="${restoreLabel}">×</button>
+        </div>
+        <div class="a-co">${escapeHtml(item.company)}</div>
+        <div class="a-when">${relTimeSince(item.at || Date.now())}</div>
+      </div>`).join('');
+    container.querySelectorAll('.unapply').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const k = btn.dataset.key;
+        if (btn.dataset.list === 'appliedList') { delete applied[k]; saveApplied(); }
+        else { delete dismissed[k]; saveDismissed(); }
+        render();
+      });
+    });
+  }
+
+  function recordApplied(sess, j) {
+    const k = jobKey(j, sess.id);
+    if (applied[k]) return;
+    applied[k] = {
+      company: j.company, title: j.title, url: j.url,
+      sessionId: sess.id, sessionDate: sess.date, at: Date.now()
+    };
+    saveApplied();
+  }
+  function recordDismissed(sess, j) {
+    const k = jobKey(j, sess.id);
+    if (dismissed[k]) return;
+    dismissed[k] = {
+      company: j.company, title: j.title, url: j.url,
+      sessionId: sess.id, sessionDate: sess.date, at: Date.now()
+    };
+    saveDismissed();
+  }
+
+  function render() {
+    const s = sessions.find(s => s.id === state.sessionId) || sessions[0];
+    const q = state.search.trim().toLowerCase();
+    const filtered = s.jobs.filter(j => {
+      const k = jobKey(j, s.id);
+      if (dismissed[k]) return false; // dismissed always hidden from grid
+      if (j.score < state.minScore) return false;
+      if (state.sponsor !== 'any' && (j.sponsorship || 'unknown') !== state.sponsor) return false;
+      if (state.arr !== 'any' && j.arrangement !== state.arr) return false;
+      if (state.exp !== 'any' && j.experience !== state.exp) return false;
+      if (state.hideApplied && applied[k]) return false;
+      if (q) {
+        const hay = `${j.title} ${j.company} ${j.description||''} ${j.location||''}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    $('sessionMeta').textContent = sessionLongLabel(s);
+    $('counts').textContent = `Showing ${filtered.length} of ${s.jobs.length}`;
+
+    const root = $('jobs');
+    if (filtered.length === 0) {
+      root.innerHTML = `<div class="disco-empty">
+        <img src="disco.jpg" alt="">
+        <div class="cap">Nothing matched the filters, detective.<br><span style="opacity:.7">Loosen the score, toggle a filter, or queue another scan.</span></div>
+      </div>`;
+    } else {
+      root.innerHTML = filtered.map(j => {
+        const key = jobKey(j, s.id);
+        const isApplied = !!applied[key];
+        const sponsorClass = j.sponsorship === 'available' ? 'spon-ok' : j.sponsorship === 'none' ? 'spon-no' : '';
+        const sponsorLabel = j.sponsorship === 'available' ? '✓ sponsors' : j.sponsorship === 'none' ? '✕ no sponsor' : '? sponsorship';
+        const metaBits = [
+          j.location, j.arrangement, j.salary, j.posted,
+          j.experience ? `${j.experience} yrs` : null
+        ].filter(Boolean);
+        const metaHtml = metaBits.map((b, i) =>
+          (i === 0 ? '' : '<span class="sep">·</span>') + `<span>${escapeHtml(b)}</span>`
+        ).join('') + `<span class="sep">·</span><span class="badge ${sponsorClass}">${sponsorLabel}</span>`;
+        return `
+          <div class="job ${isApplied ? 'applied' : ''}" data-key="${escapeHtml(key)}">
+            <button class="dismiss-btn" data-key="${escapeHtml(key)}" title="Dismiss this role">×</button>
+            <div class="score-cell">${ringSvg(j.score)}</div>
+            <div class="info-cell">
+              <div class="rank">#${j.rank}</div>
+              <h3 class="title"><a href="${escapeHtml(j.url)}" target="_blank" rel="noopener" data-apply-link>${escapeHtml(j.title)}</a></h3>
+              <div class="company">${escapeHtml(j.company)}</div>
+              <div class="meta">${metaHtml}</div>
+              ${j.description ? `<div class="desc">${escapeHtml(j.description)}</div>` : ''}
+              <div class="actions">
+                ${isApplied
+                  ? `<span class="applied-flag">Applied ✓</span><button class="unmark-inline" data-unmark="${escapeHtml(key)}">unmark</button>`
+                  : `<a class="btn btn-apply" href="${escapeHtml(j.url)}" target="_blank" rel="noopener" data-apply-link>Apply →</a>`}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // Apply click → auto-mark applied
+    root.querySelectorAll('[data-apply-link]').forEach(el => {
+      el.addEventListener('click', () => {
+        const card = el.closest('.job');
+        if (!card) return;
+        const sess = sessions.find(x => x.id === state.sessionId);
+        const j = sess?.jobs.find(j => jobKey(j, sess.id) === card.dataset.key);
+        if (!j) return;
+        recordApplied(sess, j);
+        setTimeout(render, 50);
+      });
+    });
+
+    // Dismiss click → record + remove from grid
+    root.querySelectorAll('.dismiss-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sess = sessions.find(x => x.id === state.sessionId);
+        const j = sess?.jobs.find(j => jobKey(j, sess.id) === btn.dataset.key);
+        if (!j) return;
+        recordDismissed(sess, j);
+        render();
+      });
+    });
+
+    // Inline unmark applied
+    root.querySelectorAll('[data-unmark]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        delete applied[btn.dataset.unmark];
+        saveApplied();
+        render();
+      });
+    });
+
+    // Drop log
+    const drop = s.drop_log || {};
+    const dItems = Object.entries(drop).sort((a, b) => b[1] - a[1]);
+    $('droplog').innerHTML = dItems.length
+      ? dItems.map(([k, v]) => `<code>${escapeHtml(k)}</code>=${v}`).join(' · ')
+      : '<i>none</i>';
+
+    renderList(applied, 'appliedList', 'appliedCnt', 'Remove from applied');
+    renderList(dismissed, 'dismissedList', 'dismissedCnt', 'Restore');
+  }
+
+  // ---- Keyboard nav ----
+  let cursor = -1;
+  document.addEventListener('keydown', e => {
+    if (['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+    const cards = [...document.querySelectorAll('.job:not(.hidden)')];
+    if (!cards.length) return;
+    if (e.key === 'j') { cursor = Math.min(cursor + 1, cards.length - 1); cards[cursor].scrollIntoView({block:'center',behavior:'smooth'}); cards.forEach((c,i) => c.style.outline = i === cursor ? '1px solid var(--link)' : ''); }
+    if (e.key === 'k') { cursor = Math.max(cursor - 1, 0); cards[cursor].scrollIntoView({block:'center',behavior:'smooth'}); cards.forEach((c,i) => c.style.outline = i === cursor ? '1px solid var(--link)' : ''); }
+    if (e.key === 'Enter' && cursor >= 0) { const link = cards[cursor].querySelector('[data-apply-link]'); link && link.click(); }
+    if (e.key === 'x' && cursor >= 0) { const btn = cards[cursor].querySelector('.dismiss-btn'); btn && btn.click(); cursor = Math.max(-1, cursor - 1); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

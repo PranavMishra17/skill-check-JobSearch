@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dark base circle (warm espresso, matches site bg) -->
+  <circle cx="32" cy="32" r="30" fill="#1a160f"/>
+  <!-- Thin amber rule just inside -->
+  <circle cx="32" cy="32" r="28" fill="none" stroke="#caa56d" stroke-width="0.6" opacity="0.55"/>
+
+  <!-- The loaded die — tilted, cream face -->
+  <g transform="translate(32 32) rotate(-12)">
+    <!-- subtle drop shadow -->
+    <rect x="-15" y="-14" width="32" height="32" rx="3" fill="#0a0805" opacity="0.5"/>
+    <!-- die face -->
+    <rect x="-16" y="-16" width="32" height="32" rx="3.5" fill="#e7dcc0" stroke="#7a5520" stroke-width="1"/>
+    <!-- inner registration rule -->
+    <rect x="-13" y="-13" width="26" height="26" rx="1.5" fill="none" stroke="#caa56d" stroke-width="0.7" opacity="0.6"/>
+    <!-- the lone pip — a "1" -->
+    <circle cx="0" cy="0" r="5" fill="#caa56d"/>
+    <circle cx="0" cy="0" r="5" fill="none" stroke="#7a5520" stroke-width="0.5" opacity="0.6"/>
+    <!-- scratch across the face — bad luck mark -->
+    <path d="M-11 -8 L-3 -2" stroke="#7a5520" stroke-width="1.1" stroke-linecap="round" opacity="0.5"/>
+    <path d="M5 7 L9 11" stroke="#7a5520" stroke-width="0.8" stroke-linecap="round" opacity="0.35"/>
+  </g>
+</svg>

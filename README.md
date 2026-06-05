@@ -1,0 +1,240 @@
+# `job-search` / `hire-search`
+
+*A two-headed daily dossier of job listings and the humans hiring for them — wrapped in a Disco Elysium aesthetic and run from Claude Code.*
+
+![Crimebook hero](jobs_ui/disco.jpg)
+
+> *"There is a particular cruelty in a job board that returns nothing on a Thursday."*
+
+This is a personal command-line + browser-dashboard rig. Two slash commands run inside [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview), each fan out across [Apify](https://apify.com) actors, score the results against your profile, and append a new session to a static HTML dashboard you open in your browser. The HTML never changes between runs — only the underlying `data.js` / `hires.js` files grow.
+
+---
+
+## What it does
+
+**`/job-search [Nd]`** — crawls 175k+ company career sites (via Workday/Greenhouse/Ashby/Lever/iCIMS/etc.) for AI / LLM / ML / Founding-Eng / Forward-Deployed roles posted in the last N days. Filters out roles that explicitly close the door on visa sponsorship, anything senior/staff/principal, 4+ YoE requirements, defense / clearance-gated work, and dedups against everything you've already seen. Survivors are scored 0–100, written to `jobs_ui/data.js`, and rendered as cards in `jobs_ui/index.html`.
+
+**`/hire-search [Nd] [scope]`** — crawls LinkedIn for (a) recruiters at AI/ML companies and (b) public "we are hiring" posts. Decodes LinkedIn activity IDs to compute post age and drops anything older than the requested window. Cross-references companies against the open positions in your job-search history (matches get a badge + score boost). Surfaces both kinds in one ranked list in `jobs_ui/hires.html`.
+
+Both interfaces share a sidebar with **Applied / Contacted** (top) and **Dismissed** (bottom, collapsed) that persists in `localStorage`. Apply / Open-profile auto-marks the entry and removes it from the main grid. The card you just clicked vanishes into the sidebar; the next lead steps forward.
+
+---
+
+## Setup
+
+### 1. Prerequisites
+
+| | |
+|---|---|
+| Python | 3.10+ |
+| Claude Code | [Install](https://docs.claude.com/en/docs/agents-and-tools/claude-code/quickstart) |
+| Apify account | Free tier OK; get an API token at apify.com/account/integrations |
+
+### 2. Clone
+
+```bash
+git clone https://github.com/<you>/<repo-name>.git
+cd <repo-name>
+```
+
+The repo's tree:
+
+```
+.
+├── README.md
+├── CLAUDE.md                      project memory for Claude Code
+├── jobs_ui/                       browser dashboard (open this in a browser)
+│   ├── index.html                 Jobs page — never regenerated
+│   ├── hires.html                 Hires page — never regenerated
+│   ├── data.js                    window.JOB_SESSIONS = [...]
+│   ├── hires.js                   window.HIRE_SESSIONS = [...]
+│   ├── favicon.svg                loaded-die icon
+│   └── disco.jpg                  hero background
+├── profile/                       your candidate inputs (read-only to the agent)
+│   ├── RESUME.pdf
+│   ├── PORTFOLIO.pdf
+│   └── *.md
+└── .claude/
+    ├── agents/                    sub-agent specs (documentation)
+    └── commands/                  slash command runtimes
+        ├── job-search.md
+        └── hire-search.md
+```
+
+### 3. Install the Apify MCP server
+
+The slash commands need Claude Code to be able to call Apify actors as tools.
+
+```bash
+claude mcp add apify --transport http \
+  --url https://mcp.apify.com \
+  --header "Authorization: Bearer <YOUR_APIFY_TOKEN>"
+```
+
+(Or use Apify's [official MCP docs](https://docs.apify.com/platform/integrations/mcp) for stdio mode.)
+
+### 4. Drop your profile in `profile/`
+
+Put your inputs anywhere under `profile/` — the agent reads them once during bootstrap. Suggested files:
+
+- `RESUME.pdf` — current resume
+- `PORTFOLIO.pdf` — public-facing portfolio
+- `<CURRENT_ROLE>.md` — a deep-dive on your current job (what you're shipping, stack, scope)
+- `<PRIOR_ROLE>.md` — deep-dives on prior roles (interview-grade detail)
+- `<PROJECT>.md` — any side project you'd want surfaced when scoring
+
+### 5. Bootstrap your state
+
+The first run of `/job-search` walks you through a short questionnaire (salary floor / preferred, location, role titles in scope, dealbreakers, etc.) and writes:
+
+```
+~/.job_search/state.json
+~/.job_search/sessions/
+~/.job_search/raw_hires/
+```
+
+This state file is the source of truth — never commit it. Everything in this repo is *templates and code*; your personal data lives outside.
+
+### 6. Configure preferences (optional)
+
+You can hand-edit `~/.job_search/state.json` to tune:
+
+- `preferences.salary` — floor / preferred / cap
+- `preferences.location` — remote / hybrid / on-site weights
+- `preferences.industries_avoid` — defense, military, etc.
+- `preferences.dealbreakers` — title regexes that auto-drop (senior / staff / etc.)
+- `preferences.crawl_sources` — which Apify actors to use as primary / secondary
+- `preferences.applied_or_tracking` — companies to silently exclude from future scans
+
+The slash command `/job-search I applied to <Company>` does this for you.
+
+---
+
+## Daily use
+
+```
+/job-search             # 1-day window, default scope
+/job-search 7d          # past week
+/job-search 14d         # past two weeks
+/job-search show me jobs from Cohere
+/job-search I applied to Anthropic
+/job-search reset job history     # destructive — confirms first
+
+/hire-search            # 14-day window, US AI scope
+/hire-search 5d         # past 5 days
+/hire-search 5d founding   # founding-engineer scope, past 5 days
+/hire-search 7d india   # India scope
+/hire-search remote
+```
+
+After each run, open `jobs_ui/index.html` (or `hires.html`) in a browser. The Scan dropdown lets you flip between past sessions. Filters persist in `localStorage`; Apply / Open-profile auto-moves the entry to the sidebar; the `×` on a card dismisses it.
+
+---
+
+## Future: run from the dashboard itself
+
+> **Status: proposed, not built. Scope only.**
+
+Right now `/job-search` and `/hire-search` are typed inside Claude Code. The dashboard is read-only. The next step is a tiny local server that lets you click a button in the browser and have the workflow run, refresh the data file, and re-render — without leaving the page.
+
+### Architecture
+
+```
+                     ┌──────────────────┐
+       browser   ──► │  jobs_ui/*.html  │ ──► fetch('http://localhost:8123/run/job-search?args=7d')
+                     └──────────────────┘                      │
+                                                               ▼
+                                                ┌────────────────────────────┐
+                                                │  Flask / FastAPI server    │
+                                                │  app.py  ~80 lines         │
+                                                └────────────────────────────┘
+                                                               │ subprocess.run
+                                                               ▼
+                                              ┌─────────────────────────────────┐
+                                              │  claude -p "/job-search 7d"     │
+                                              │  --output-format=stream-json    │
+                                              └─────────────────────────────────┘
+                                                               │
+                                                               ▼
+                                                    data.js / hires.js
+                                                    (written by the script
+                                                    the slash command runs)
+                                                               │
+                                                browser refreshes data.js  ◄────┘
+```
+
+### Files to add (not present yet)
+
+```
+.
+├── webapp/
+│   ├── app.py                     ~80 lines, single endpoint per command
+│   ├── requirements.txt           flask, python-dotenv
+│   └── .env.example               APIFY_TOKEN, CLAUDE_BIN path
+└── jobs_ui/
+    └── run-controls.js            small script the HTML loads; renders Run buttons
+```
+
+### Server endpoints (proposed)
+
+| Method | Path | Body | What it does |
+|---|---|---|---|
+| `POST` | `/run/job-search` | `{ "args": "7d" }` | shells `claude -p "/job-search 7d" --output-format=stream-json` and streams progress to the client; returns when `data.js` has been written |
+| `POST` | `/run/hire-search` | `{ "args": "5d founding" }` | same, for `/hire-search` |
+| `POST` | `/run/applied` | `{ "company": "Anthropic" }` | thin wrapper for `/job-search I applied to ...` (state mutation, no crawl) |
+| `GET` | `/healthz` | — | returns 200 + Apify token presence |
+
+### Setup (when built)
+
+```bash
+cd webapp
+pip install -r requirements.txt
+cp .env.example .env             # fill in APIFY_TOKEN, CLAUDE_BIN
+python app.py                    # starts at http://localhost:8123
+```
+
+Then open `http://localhost:8123/jobs_ui/index.html` (the Flask app also serves the dashboard so the browser fetch() request doesn't hit a CORS wall from `file://`).
+
+### Concerns to handle before shipping
+
+- **Auth.** Anyone on localhost could fire a paid Apify crawl. A simple shared token in the `.env`, validated on each request, is probably enough for a single-user local server.
+- **Cost.** Each `/job-search` is ~$2.40, `/hire-search` is ~$1.00. Surface estimated cost on the button hover and add a `--dry-run` mode.
+- **Concurrency.** One workflow at a time. The server should reject a second `/run/*` while one is in flight.
+- **Streaming.** `claude -p --output-format=stream-json` emits NDJSON; pipe that to Server-Sent Events so the UI can show progress ("calling Apify… scoring… writing data.js…").
+- **Failure.** If the subprocess exits non-zero, surface the last 50 lines of `claude`'s stderr in the UI.
+
+### What this *doesn't* solve
+
+This is a **personal local rig**, not a hosted product. It still needs your machine running, with the Apify MCP server connected through Claude Code, with Python on path. For an "always fresh" dashboard with no machine running, the path is **GitHub Actions cron** (a workflow that runs `render_results.py` directly via Apify's REST API, no Claude Code, commits the new `data.js` back to the repo, GitHub Pages serves the HTML).
+
+---
+
+## Customize for yourself
+
+This repo ships with one person's profile and one set of preferences. To make it yours:
+
+1. Replace everything under `profile/` with your own materials.
+2. Delete `~/.job_search/state.json` and run `/job-search` to re-bootstrap.
+3. Tweak the title strings in `jobs_ui/index.html` and `jobs_ui/hires.html` (the Crimebook label has a hard-coded byline you'll probably want to change).
+4. Optionally swap `disco.jpg` for an image you like better — keep the aspect ratio around 1.3:1 and the focal point near top-center.
+
+The CSS palette lives in `:root` at the top of each HTML file. The Crimebook label assumes a warm-espresso bg; if you want a light theme, the label-on-image effect won't work the same way.
+
+---
+
+## Architecture (one paragraph)
+
+The whole rig avoids LLM dependency at run-time. The slash commands tell Claude *which* Apify actor to call and with what parameters — but the actual scoring, filtering, dedup, and HTML-data writes are deterministic Python. That means once you've worked out the parameters and the score weights for your profile, you can port the entire workflow off Claude Code onto a GitHub Action or a cron job without losing anything except the natural-language argument parsing.
+
+---
+
+## License
+
+MIT — see `LICENSE` (add one before publishing).
+
+## Credits
+
+- Hero image: *Disco Elysium* (ZA/UM, 2019). Used here under fair-use for personal aesthetic purposes; this repo claims no ownership.
+- Fonts: [Fraunces](https://fonts.google.com/specimen/Fraunces) (Undercase Type), [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) (Rasmus Andersson), [JetBrains Mono](https://www.jetbrains.com/lp/mono/).
+- Apify actors: [`fantastic-jobs/career-site-job-listing-api`](https://apify.com/fantastic-jobs/career-site-job-listing-api), [`apt_marble/linkedin-hiring-posts-scraper`](https://apify.com/apt_marble/linkedin-hiring-posts-scraper), [`apt_marble/linkedIn-recruiter-scraper`](https://apify.com/apt_marble/linkedIn-recruiter-scraper).
+- Built with [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview).

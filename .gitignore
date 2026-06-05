@@ -1,0 +1,35 @@
+# Personal data — your candidate inputs (keep your own privately)
+# profile/  — un-comment if YOU want to keep your profile private
+#             (default: ship it as an example; remove for the public repo)
+
+# State / sessions are stored outside the repo (~/.job_search/) so no .gitignore entry needed
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node (in case the future webapp uses it)
+node_modules/
+dist/
+build/
+
+# Local environment
+.env
+.env.local
+
+# Original source assets (the .jpeg before we copied it to jobs_ui/)
+Disco.jpeg
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
