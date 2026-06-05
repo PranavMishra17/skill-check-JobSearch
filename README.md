@@ -1,10 +1,14 @@
-# `job-search` / `hire-search`
+# skill-check-JobSearch
 
 *A two-headed daily dossier of job listings and the humans hiring for them — wrapped in a Disco Elysium aesthetic and run from Claude Code.*
+
+`/job-search` &nbsp;·&nbsp; `/hire-search`
 
 ![Crimebook hero](jobs_ui/disco.jpg)
 
 > *"There is a particular cruelty in a job board that returns nothing on a Thursday."*
+
+**Live preview:** the static dashboard auto-deploys to GitHub Pages on every push that touches `jobs_ui/`. After you push this repo, GitHub Pages will serve it at `https://<your-user>.github.io/skill-check-JobSearch/`. The hero label is clickable — opens a dossier modal so visitors understand which profile and preferences the agent is filtering against.
 
 This is a personal command-line + browser-dashboard rig. Two slash commands run inside [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview), each fan out across [Apify](https://apify.com) actors, score the results against your profile, and append a new session to a static HTML dashboard you open in your browser. The HTML never changes between runs — only the underlying `data.js` / `hires.js` files grow.
 

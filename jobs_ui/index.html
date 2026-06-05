@@ -45,8 +45,8 @@
   /* ---------- Header ---------- */
   /* Sticky topbar — solid black at top; Disco image (colored, no duotone) only when hero is scrolled past */
   header{position:sticky;top:0;z-index:10;border-bottom:1px solid var(--border);background:#0a0805;isolation:isolate}
-  header::before{content:"";position:absolute;inset:0;background:url('disco.jpg') center 28%/cover no-repeat;opacity:0;z-index:-2;pointer-events:none}
-  header::after{content:"";position:absolute;inset:0;background:rgba(10,8,5,.55);opacity:0;z-index:-1;pointer-events:none;box-shadow:inset 0 -1px 0 rgba(202,165,109,.18)}
+  header::before{content:"";position:absolute;inset:0;background:url('disco.jpg') center 28%/cover no-repeat;opacity:0;z-index:-2;pointer-events:none;transition:opacity 600ms ease-out 120ms}
+  header::after{content:"";position:absolute;inset:0;background:rgba(10,8,5,.55);opacity:0;z-index:-1;pointer-events:none;box-shadow:inset 0 -1px 0 rgba(202,165,109,.18);transition:opacity 600ms ease-out 120ms}
   header.scrolled::before{opacity:1}
   header.scrolled::after{opacity:1}
   .wrap{max-width:1480px;margin:0 auto;padding:0 24px}
@@ -173,6 +173,49 @@
   .hero-label .byline{font-family:var(--serif);font-style:italic;font-size:13.5px;color:#3b2e1c;margin-top:12px;line-height:1.45}
   .hero-label .meta-line{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#7a623e;margin-top:14px;padding-top:8px;border-top:1px dashed rgba(35,27,16,.45)}
   .hero-label .meta-line .num{font-family:var(--mono);font-size:10px;color:#7a623e;letter-spacing:.12em}
+  .hero-label.is-button{cursor:pointer;transition:background 160ms ease-out}
+  .hero-label.is-button:hover{background:#dfd4b6}
+  .hero-label .label-hint{margin-top:12px;text-align:center;font-family:var(--serif);font-style:italic;font-size:11.5px;color:rgba(35,27,16,.42);letter-spacing:.005em;transition:color 160ms ease-out}
+  .hero-label.is-button:hover .label-hint{color:rgba(35,27,16,.82)}
+  .hero-label .label-hint::before{content:"▸ ";color:#7a5520}
+
+  /* ---------- Dossier modal ---------- */
+  .modal{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:40px 20px;font-family:var(--sans)}
+  .modal[hidden]{display:none}
+  .modal-backdrop{position:absolute;inset:0;background:rgba(8,5,2,.86);cursor:pointer}
+  .modal-card{position:relative;background:#e7dcc0;color:#231b10;width:720px;max-width:100%;max-height:90vh;overflow-y:auto;padding:34px 42px 38px;box-shadow:0 30px 80px -16px rgba(0,0,0,.85),0 0 0 1px rgba(0,0,0,.3);border:1px solid #b09060}
+  .modal-card::before{content:"";position:absolute;inset:8px;border:1px solid rgba(35,27,16,.32);pointer-events:none}
+  .modal-card .corner{position:absolute;width:11px;height:11px;border:1px solid #5a4628}
+  .modal-card .corner.tl{top:-1px;left:-1px;border-right:none;border-bottom:none}
+  .modal-card .corner.tr{top:-1px;right:-1px;border-left:none;border-bottom:none}
+  .modal-card .corner.bl{bottom:-1px;left:-1px;border-right:none;border-top:none}
+  .modal-card .corner.br{bottom:-1px;right:-1px;border-left:none;border-top:none}
+  .modal-close{position:absolute;top:18px;right:18px;width:30px;height:30px;border:1px solid rgba(35,27,16,.4);background:transparent;color:#231b10;font-size:18px;cursor:pointer;line-height:1;font-family:var(--serif);border-radius:0}
+  .modal-close:hover{background:rgba(35,27,16,.1)}
+  .dossier-head{border-bottom:2px solid rgba(35,27,16,.45);padding-bottom:18px;margin-bottom:24px}
+  .dossier-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:#7a5520;text-transform:uppercase;display:flex;justify-content:space-between}
+  .dossier-head h2{font-family:var(--serif);font-weight:600;font-size:38px;line-height:.95;color:#231b10;margin:10px 0 6px;letter-spacing:-.022em}
+  .dossier-head h2 em{font-style:italic;font-weight:500;color:#7a5520}
+  .dossier-head .byline{font-family:var(--serif);font-style:italic;font-size:14.5px;color:#3b2e1c;letter-spacing:-.005em}
+  .dossier-body{display:flex;flex-direction:column;gap:22px}
+  .dossier-sec h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#7a5520;border-bottom:1px solid rgba(35,27,16,.28);padding-bottom:5px;margin:0 0 10px;font-weight:500}
+  .dossier-sec p{margin:4px 0;font-size:13px;color:#231b10;line-height:1.55}
+  .dossier-sec ul{margin:4px 0;padding:0;list-style:none}
+  .dossier-sec ul li{font-size:13px;color:#231b10;line-height:1.55;padding-left:14px;position:relative;margin:3px 0}
+  .dossier-sec ul li::before{content:"·";position:absolute;left:4px;top:-2px;color:#7a5520;font-weight:700;font-size:14px}
+  .dossier-sec .kv{display:grid;grid-template-columns:120px 1fr;gap:7px 16px;font-size:13px;align-items:baseline}
+  .dossier-sec .kv .k{font-family:var(--mono);font-size:10.5px;color:#7a5520;text-transform:uppercase;letter-spacing:.08em}
+  .dossier-sec .kv .v{color:#231b10}
+  .dossier-sec .kv .v a{color:#7a5520;text-decoration:underline;text-underline-offset:2px;text-decoration-color:rgba(122,85,32,.3)}
+  .dossier-sec .kv .v a:hover{text-decoration-color:#7a5520}
+  .dossier-sec .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+  .dossier-sec .chip{display:inline-block;padding:3px 8px;background:rgba(35,27,16,.06);border:1px solid rgba(35,27,16,.18);font-family:var(--mono);font-size:10.5px;color:#3b2e1c;letter-spacing:.04em}
+  .dossier-sec .skill-group{margin:6px 0 10px}
+  .dossier-sec .skill-group .sg-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#7a5520;text-transform:uppercase;margin-bottom:4px}
+  .dossier-sec .proj{font-size:13px;margin:4px 0;line-height:1.5}
+  .dossier-sec .proj b{font-family:var(--serif);font-weight:600;color:#231b10}
+  .dossier-sec .proj span{color:#5a4628;font-size:12.5px;font-style:italic}
+  .dossier-foot{margin-top:24px;padding-top:14px;border-top:1px dashed rgba(35,27,16,.35);font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7a5520;display:flex;justify-content:space-between}
   @media (max-width:780px){
     .hero{height:auto;padding-bottom:24px}
     .hero-label{position:relative;left:auto;right:auto;bottom:auto;margin:200px 18px 0;width:auto}
@@ -223,7 +266,7 @@
     <div class="stars">★ ★ ★ ★</div>
     Archive No. III · Volume I
   </div>
-  <div class="hero-label">
+  <div class="hero-label is-button" id="heroLabelBtn" role="button" tabindex="0" aria-label="Open candidate dossier">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
     <div class="stamp-row">
       <span>Job Search</span>
@@ -237,6 +280,7 @@
       <span><span id="heroCount" class="num">34</span> leads</span>
       <span>OPT &middot; STEM</span>
     </div>
+    <div class="label-hint">click to view the subject's dossier</div>
   </div>
 </section>
 <nav class="hero-nav">
@@ -313,6 +357,26 @@
   </main>
 </div>
 
+<!-- Dossier modal -->
+<div class="modal" id="dossierModal" hidden>
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <button class="modal-close" data-close title="close">×</button>
+    <div class="dossier-head">
+      <div class="dossier-tag"><span>Case File · No. 03</span><span>Confidential · Office Use</span></div>
+      <h2>The <em>Subject</em>.</h2>
+      <div class="byline">In re: <em id="dossierName">—</em></div>
+    </div>
+    <div class="dossier-body" id="dossierBody"></div>
+    <div class="dossier-foot">
+      <span>END · DOSSIER</span>
+      <span>Pages turn outside the office.</span>
+    </div>
+  </div>
+</div>
+
+<script src="profile.js"></script>
 <script src="data.js"></script>
 <script>
 (() => {
@@ -331,6 +395,76 @@
       const hi = document.getElementById('heroIssue'); if (hi) hi.textContent = issueNo;
       const hc = document.getElementById('heroCount'); if (hc) hc.textContent = leads;
     } catch (e) {}
+  })();
+
+  // Dossier modal — populated from window.PROFILE_INFO
+  (function setupDossier() {
+    const profile = window.PROFILE_INFO;
+    const modal = document.getElementById('dossierModal');
+    const btn = document.getElementById('heroLabelBtn');
+    if (!profile || !modal || !btn) return;
+    function esc(s){return (s ?? '').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function kv(rows){return `<div class="kv">${rows.map(([k,v])=>`<span class="k">${esc(k)}</span><span class="v">${v}</span>`).join('')}</div>`;}
+    function chips(arr){return `<div class="chips">${arr.map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>`;}
+    function ul(arr){return `<ul>${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;}
+    function render() {
+      document.getElementById('dossierName').textContent = profile.identity.name;
+      const linksHtml = Object.entries(profile.identity.links).map(([k,v])=>`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(k)}</a>`).join(' · ');
+      const sections = [
+        { title: 'Identity', body: kv([
+            ['Name', esc(profile.identity.name)],
+            ['Role', esc(profile.identity.role)],
+            ['Location', esc(profile.identity.location)],
+            ['Email', `<a href="mailto:${esc(profile.identity.email)}">${esc(profile.identity.email)}</a>`],
+            ['Links', linksHtml],
+            ['Work auth', esc(profile.identity.work_auth)],
+          ]) },
+        { title: 'Current Position', body: kv([
+            ['Title', esc(profile.current_role.title)],
+            ['Company', esc(profile.current_role.company)],
+            ['Since', esc(profile.current_role.since)],
+            ['Brief', esc(profile.current_role.summary)],
+          ]) },
+        { title: 'Distinguishing Marks', body: ul(profile.signals) },
+        { title: 'Education', body: profile.education.map(e=>
+            `<p><b>${esc(e.degree)}</b> — ${esc(e.school)} <span style="color:#7a5520">· ${esc(e.years)}${e.note?' · '+esc(e.note):''}</span></p>`
+          ).join('') },
+        { title: 'Skills on file', body: Object.entries(profile.skills).map(([k,v])=>
+            `<div class="skill-group"><div class="sg-label">${esc(k.replace(/_/g,' '))}</div>${chips(v)}</div>`
+          ).join('') },
+        { title: 'Domain expertise', body: ul(profile.expertise) },
+        { title: 'Flagship projects', body: profile.flagship_projects.map(p=>
+            `<div class="proj"><b>${esc(p.name)}</b> — <span>${esc(p.note)}</span></div>`
+          ).join('') },
+        { title: 'Preferences (what the agent filters for)', body: kv([
+            ['Salary', esc(profile.preferences.salary)],
+            ['Locations', esc(profile.preferences.locations)],
+            ['Stages', esc(profile.preferences.stages)],
+            ['Roles in scope', chips(profile.preferences.roles_in_scope)],
+            ['Avoid', chips(profile.preferences.avoid)],
+          ]) },
+        { title: 'Dealbreakers (hard drops)', body: ul(profile.dealbreakers) },
+        { title: 'Crawl setup', body:
+            kv([
+              ['Job-search actor', esc(profile.crawl_setup.job_search.primary_actor)],
+              ['Coverage', esc(profile.crawl_setup.job_search.coverage)],
+              ['Filters', esc(profile.crawl_setup.job_search.filters)],
+              ['Cost / run', esc(profile.crawl_setup.job_search.cost)],
+              ['Hire-search actors', profile.crawl_setup.hire_search.actors.map(a=>`<code style="font-family:var(--mono);font-size:12px">${esc(a)}</code>`).join(' · ')],
+              ['Hire coverage', esc(profile.crawl_setup.hire_search.coverage)],
+              ['Hire cost / run', esc(profile.crawl_setup.hire_search.cost)],
+            ]) },
+        { title: 'How it works', body: ul(profile.how_it_works) },
+      ];
+      document.getElementById('dossierBody').innerHTML = sections.map(s=>
+        `<section class="dossier-sec"><h3>${esc(s.title)}</h3>${s.body}</section>`).join('');
+    }
+    function open(){ render(); modal.removeAttribute('hidden'); document.body.style.overflow='hidden'; }
+    function close(){ modal.setAttribute('hidden',''); document.body.style.overflow=''; }
+    btn.addEventListener('click', open);
+    btn.addEventListener('keydown', e => { if (e.key==='Enter' || e.key===' ') { e.preventDefault(); open(); } });
+    modal.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key==='Escape' && !modal.hidden) close(); });
   })();
 
   // Scroll-triggered topbar bg — Disco image fades in only after the hero scrolls out of view
