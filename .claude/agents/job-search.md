@@ -49,23 +49,32 @@ Check `~/.job_search/state.json` (Windows: `C:\Users\prana\.job_search\state.jso
 
 ## PHASE 3 — CRAWL
 
-### Default path — JobSpy (free, local)
+### Default path — multi-source `crawl_all.py` (free, local)
 
 Call:
 ```bash
-python "C:/Users/prana/.job_search/crawl_jobspy.py" \
+python "C:/Users/prana/.job_search/crawl_all.py" \
   --window-days <N> \
   --location "United States" \
   --results-per-search 30 \
   --output "C:/Users/prana/.job_search/raw_jobs/<date>_<N>d.json"
 ```
 
-Optional flags:
-- `--include-linkedin` — adds LinkedIn (slow, rate-limited)
-- `--company "<Name>"` — single-company targeted crawl
-- `--terms "Term1" "Term2" ...` — override default 6-term search list
+Sources fused into one JSON:
+1. **JobSpy** — Indeed, Google, Glassdoor (LinkedIn opt-in via `--include-linkedin`). 17 search terms.
+2. **GitHub `SimplifyJobs/New-Grad-Positions`** — `listings.json`, AI-filtered.
+3. **GitHub `speedyapply/2026-AI-College-Jobs`** — daily AI/ML new-grad markdown table.
+4. **Arbeitnow** — free public API, AI-filtered.
 
-The script handles JobSpy invocation, URL-level dedup, title pre-filter, and normalisation to Apify-compatible JSON. Output path is echoed to stdout; capture it for Phase 4.
+Optional flags:
+- `--include-linkedin` — adds LinkedIn to JobSpy (slow, rate-limited)
+- `--company "<Name>"` — single-company targeted crawl (disables GitHub + Arbeitnow)
+- `--terms "Term1" "Term2" ...` — override default 17-term JobSpy search list
+- `--no-jobspy` / `--no-github` / `--no-arbeitnow` — selectively disable sources
+
+The orchestrator handles invocation of each source, URL-level + (company, title) cross-source dedup, AI-scope filtering for generic feeds, and normalisation to Apify-compatible JSON. Output path is echoed to stdout; capture it for Phase 4.
+
+`crawl_jobspy.py` is retained as a `--single-source` fallback.
 
 ### Fallback path — Apify (only when `--apify` is passed or JobSpy fails)
 

@@ -8,11 +8,18 @@ You run the job-search workflow **inline in the main turn**, not via the sub-age
 
 > **Why inline?** Claude Code sub-agents don't inherit the parent's MCP server access by default, so `mcp__Apify__*` tools aren't reachable from inside the `job-search` sub-agent. The sub-agent definition at `.claude/agents/job-search.md` is the operational spec; the slash command runs it.
 
-## Primary crawler: JobSpy (free, local)
+## Primary crawler: multi-source `crawl_all.py` (free, local)
 
-The default crawler is **[JobSpy](https://github.com/speedyapply/JobSpy)** — a Python library that scrapes Indeed, Glassdoor, Google Jobs, ZipRecruiter, and LinkedIn directly. No Apify, no subscription, no per-run cost. Lives at `C:/Users/prana/.job_search/crawl_jobspy.py`. Output schema is normalized to match the prior Apify actor's output, so `render_results.py` and the rest of the pipeline are unchanged.
+The default crawler is **`C:/Users/prana/.job_search/crawl_all.py`** — a multi-source orchestrator that fuses four free sources into one Apify-shape JSON:
 
-Apify (`fantastic-jobs/career-site-job-listing-api`) is kept as a fallback for cases where JobSpy yields too little (e.g. the Apify actor covers ATS direct sites that JobSpy doesn't — Workday/Greenhouse/Ashby/Lever).
+1. **[JobSpy](https://github.com/speedyapply/JobSpy)** — Indeed, Google Jobs, Glassdoor (LinkedIn opt-in). 17 search terms covering AI/ML/agentic/founding/forward-deployed/MLOps/research/etc.
+2. **GitHub `SimplifyJobs/New-Grad-Positions`** — `listings.json` parsed directly, filtered to AI/ML titles.
+3. **GitHub `speedyapply/2026-AI-College-Jobs`** — daily-updated AI/ML new-grad markdown table.
+4. **[Arbeitnow](https://www.arbeitnow.com/api/job-board-api)** — free public API, filtered to AI/ML titles.
+
+All outputs normalised to the same Apify schema and cross-source URL-deduped. `render_results.py` consumes the unified JSON unchanged.
+
+The single-source crawler `crawl_jobspy.py` is retained for `--single-source` runs. Apify (`fantastic-jobs/career-site-job-listing-api`) stays as a `--apify` fallback for ATS-direct coverage (Workday/Greenhouse/Ashby/Lever) when needed.
 
 ## Output
 
@@ -49,10 +56,10 @@ Echo the parsed mode + window at the start:
 
 Read `~/.job_search/state.json`. Bind `prefs = state.preferences`, `seen = state.seen_job_ids`. Verify `crawl_jobspy.py` exists at `C:/Users/prana/.job_search/crawl_jobspy.py`.
 
-### Step B — run JobSpy
+### Step B — run the multi-source crawler
 
 ```bash
-python "C:/Users/prana/.job_search/crawl_jobspy.py" \
+python "C:/Users/prana/.job_search/crawl_all.py" \
   --window-days <N> \
   --location "United States" \
   --results-per-search 30 \
@@ -60,15 +67,20 @@ python "C:/Users/prana/.job_search/crawl_jobspy.py" \
 ```
 
 Optional flags:
-- `--include-linkedin` — adds LinkedIn (slow, often rate-limits; opt-in only).
-- `--company "<Name>"` — single-company crawl (for `show me jobs from <Company>` mode).
-- `--terms "Term1" "Term2" ...` — override the default 6-term search list.
+- `--include-linkedin` — adds LinkedIn to JobSpy (slow, often rate-limits; opt-in only).
+- `--company "<Name>"` — single-company crawl (for `show me jobs from <Company>` mode). Disables GitHub + Arbeitnow sources (those don't support company search).
+- `--terms "Term1" "Term2" ...` — override the default 17-term search list (JobSpy only).
+- `--no-jobspy` / `--no-github` / `--no-arbeitnow` — selectively disable individual sources.
 
-The script handles:
-- Multi-site, multi-term scrape via JobSpy's `scrape_jobs()`
-- URL-level dedup across sites and search terms
-- Pre-drop of obvious senior/staff/lead/manager titles before scoring
+The orchestrator handles:
+- All four sources, additive (failure in one doesn't block the rest)
+- Title pre-filter (drops obvious Senior/Staff/Principal/Manager/VP/Head/Chief titles, plus pure-frontend/sales/marketing)
+- AI-scope filter on generic feeds (Arbeitnow, Simplify) — keeps only AI/ML/engineering titles
+- Window filter (drops anything older than `--window-days`)
+- Cross-source URL dedup + (company, normalised title) dedup
 - Normalisation to the same Apify-shape JSON that `render_results.py` expects
+
+If JobSpy yields little (e.g. all sites 429), the GitHub + Arbeitnow sources still provide coverage. Use `--single-source` to fall back to the older `crawl_jobspy.py` script if needed.
 
 ### Step C — score + append to data.js + archive
 

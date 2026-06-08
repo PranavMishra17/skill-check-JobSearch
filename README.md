@@ -12,13 +12,20 @@
 
 This is a personal command-line + browser-dashboard rig. Two slash commands run inside [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview), each fan out across job-board sources, score the results against your profile, and append a new session to a static HTML dashboard you open in your browser. The HTML never changes between runs — only the underlying `data.js` / `hires.js` files grow.
 
-`/job-search` runs **[JobSpy](https://github.com/speedyapply/JobSpy)** locally by default — free, no API keys, scrapes Indeed + Glassdoor + Google Jobs + ZipRecruiter (+ optional LinkedIn). `/hire-search` uses two LinkedIn-focused [Apify](https://apify.com) actors. Apify is also kept as a fallback for `/job-search` via the `--apify` flag for cases where you want ATS-direct coverage (Workday / Greenhouse / Ashby / Lever).
+`/job-search` runs a **multi-source local crawler** by default — free, no API keys. It fuses four sources into one normalised feed:
+
+1. **[JobSpy](https://github.com/speedyapply/JobSpy)** — Indeed, Google Jobs, Glassdoor (LinkedIn opt-in). 17 AI/ML/agentic/founding/MLOps/research search terms.
+2. **[`SimplifyJobs/New-Grad-Positions`](https://github.com/SimplifyJobs/New-Grad-Positions)** — daily-updated `listings.json`, AI-filtered.
+3. **[`speedyapply/2026-AI-College-Jobs`](https://github.com/speedyapply/2026-AI-College-Jobs)** — daily AI/ML new-grad markdown table.
+4. **[Arbeitnow](https://www.arbeitnow.com/api/job-board-api)** — free public API, AI-filtered.
+
+`/hire-search` uses two LinkedIn-focused [Apify](https://apify.com) actors. Apify is also kept as a fallback for `/job-search` via `--apify` for ATS-direct coverage (Workday / Greenhouse / Ashby / Lever) when needed.
 
 ---
 
 ## What it does
 
-**`/job-search [Nd]`** — runs JobSpy locally against Indeed, Glassdoor, Google Jobs, ZipRecruiter (LinkedIn opt-in) for AI / LLM / ML / Founding-Eng / Forward-Deployed roles posted in the last N days. Filters out roles that explicitly close the door on visa sponsorship, anything senior/staff/principal, 4+ YoE requirements, defense / clearance-gated work, and dedups against everything you've already seen. Survivors are scored 0–100, written to `jobs_ui/data.js`, and rendered as cards in `jobs_ui/index.html`. Add `--apify` to fall through to the prior Apify-actor path for ATS-direct coverage.
+**`/job-search [Nd]`** — fuses JobSpy + SimplifyJobs + speedyapply + Arbeitnow into a single feed of AI / LLM / ML / Founding-Eng / Forward-Deployed roles posted in the last N days. Filters out roles that explicitly close the door on visa sponsorship, anything senior/staff/principal, 4+ YoE requirements, defense / clearance-gated work, and dedups against everything you've already seen (both intra-run and against past sessions). Survivors are scored 0–100, written to `jobs_ui/data.js`, and rendered as cards in `jobs_ui/index.html`. Add `--apify` to fall through to the prior Apify-actor path for ATS-direct coverage.
 
 **`/hire-search [Nd] [scope]`** — crawls LinkedIn for (a) recruiters at AI/ML companies and (b) public "we are hiring" posts (still via Apify — the apt_marble actors are free-tier-friendly). Decodes LinkedIn activity IDs to compute post age and drops anything older than the requested window. Cross-references companies against the open positions in your job-search history (matches get a badge + score boost). Surfaces both kinds in one ranked list in `jobs_ui/hires.html`.
 
@@ -244,29 +251,34 @@ The CSS palette lives in `:root` at the top of each HTML file. The Crimebook lab
 
 ## Architecture (one paragraph)
 
-The whole rig avoids LLM dependency at run-time. The slash commands tell Claude *which* crawler to invoke (JobSpy by default, Apify on `--apify`) and with what parameters — but the actual scoring, filtering, dedup, and HTML-data writes are deterministic Python (`render_results.py`). JobSpy's output is normalised to the same JSON shape Apify produced, so the scorer is unchanged across both paths. That means once you've worked out the parameters and the score weights for your profile, you can port the entire workflow off Claude Code onto a GitHub Action or a cron job without losing anything except the natural-language argument parsing.
+The whole rig avoids LLM dependency at run-time. The slash commands tell Claude *which* crawler to invoke (`crawl_all.py` by default, Apify on `--apify`) and with what parameters — but the actual scoring, filtering, dedup, and HTML-data writes are deterministic Python (`render_results.py`). Every source's output is normalised to the same Apify-shape JSON, so the scorer is unchanged across all paths. That means once you've worked out the parameters and the score weights for your profile, you can port the entire workflow off Claude Code onto a GitHub Action or a cron job without losing anything except the natural-language argument parsing.
 
 ```
-              ┌─────────────────────────┐
-              │  /job-search 7d         │  (Claude Code slash command)
-              └────────────┬────────────┘
-                           │
-                ┌──────────┴──────────┐
-                │                     │
-                ▼                     ▼ (only with --apify)
-    ┌──────────────────────┐   ┌──────────────────────┐
-    │  crawl_jobspy.py     │   │  Apify MCP actor     │
-    │  → Indeed, Glassdoor │   │  fantastic-jobs/…    │
-    │    Google, ZipRec.   │   │  (ATS direct)        │
-    │  $0, runs locally    │   │  ~$0.012/job         │
-    └──────────┬───────────┘   └──────────┬───────────┘
-               └──────────┬───────────────┘
-                          ▼
+                      ┌─────────────────────────┐
+                      │  /job-search 7d         │  (Claude Code slash command)
+                      └────────────┬────────────┘
+                                   │
+              ┌────────────────────┴────────────────┐
+              │                                     │
+              ▼ (default)                           ▼ (only with --apify)
+  ┌────────────────────────────────┐   ┌──────────────────────┐
+  │  crawl_all.py                  │   │  Apify MCP actor     │
+  │  ├── JobSpy (Indeed/Google/    │   │  fantastic-jobs/…    │
+  │  │   Glassdoor; LinkedIn opt)  │   │  (ATS direct)        │
+  │  ├── SimplifyJobs/New-Grad     │   │  ~$0.012/job         │
+  │  ├── speedyapply/AI-College    │   │                      │
+  │  └── Arbeitnow API             │   │                      │
+  │  $0, runs locally              │   │                      │
+  └──────────┬─────────────────────┘   └──────────┬───────────┘
+             │                                     │
+             │  cross-source URL + (co,title) dedup │
+             └───────────────────┬─────────────────┘
+                                 ▼
                 ~/.job_search/raw_jobs/<date>_<window>.json
-                          │  (Apify-shape JSON)
-                          ▼
+                                 │  (unified Apify-shape JSON)
+                                 ▼
                 ┌─────────────────────────┐
-                │  render_results.py      │  (scoring + dedup + filters)
+                │  render_results.py      │  (scoring + dedup vs seen + filters)
                 └────────────┬────────────┘
                              ▼
                 jobs_ui/data.js  ←  jobs_ui/index.html reads
@@ -282,6 +294,8 @@ MIT — see `LICENSE` (add one before publishing).
 
 - Hero image: *Disco Elysium* (ZA/UM, 2019). Used here under fair-use for personal aesthetic purposes; this repo claims no ownership.
 - Fonts: [Fraunces](https://fonts.google.com/specimen/Fraunces) (Undercase Type), [Inter Tight](https://fonts.google.com/specimen/Inter+Tight) (Rasmus Andersson), [JetBrains Mono](https://www.jetbrains.com/lp/mono/).
-- Primary crawler: [JobSpy](https://github.com/speedyapply/JobSpy) (Cullen Watson, Zachary Hampton — MIT). Scrapes Indeed, Glassdoor, Google, ZipRecruiter, LinkedIn.
+- Primary crawler: [JobSpy](https://github.com/speedyapply/JobSpy) (Cullen Watson, Zachary Hampton — MIT). Scrapes Indeed, Glassdoor, Google, LinkedIn, ZipRecruiter.
+- GitHub job aggregators (community-maintained, daily-updated): [`SimplifyJobs/New-Grad-Positions`](https://github.com/SimplifyJobs/New-Grad-Positions), [`speedyapply/2026-AI-College-Jobs`](https://github.com/speedyapply/2026-AI-College-Jobs).
+- Free public APIs: [Arbeitnow](https://www.arbeitnow.com/api/job-board-api).
 - Fallback / `/hire-search` actors on [Apify](https://apify.com): [`fantastic-jobs/career-site-job-listing-api`](https://apify.com/fantastic-jobs/career-site-job-listing-api), [`apt_marble/linkedin-hiring-posts-scraper`](https://apify.com/apt_marble/linkedin-hiring-posts-scraper), [`apt_marble/linkedIn-recruiter-scraper`](https://apify.com/apt_marble/linkedIn-recruiter-scraper).
 - Built with [Claude Code](https://docs.claude.com/en/docs/agents-and-tools/claude-code/overview).
