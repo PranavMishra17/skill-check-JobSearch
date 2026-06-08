@@ -1,133 +1,162 @@
 ---
-description: Run the daily job-search crawl through Apify. Pass a time window (1d/3d/7d/14d/30d) or a sub-command ("show me jobs from <Company>", "I applied to <Company>", "reset job history"). Default window is 1d.
-argument-hint: [1d|3d|7d|14d|30d | "show me jobs from <Company>" | "I applied to <Company>" | "reset job history"]
+description: Run the daily job-search crawl. Primary crawler is JobSpy (free, local, scrapes Indeed/Glassdoor/Google/ZipRecruiter/LinkedIn). Apify retained as fallback via "--apify". Pass a time window (1d/3d/7d/14d/30d) or a sub-command ("show me jobs from <Company>", "I applied to <Company>", "reset job history"). Default window is 1d.
+argument-hint: [1d|3d|7d|14d|30d | "show me jobs from <Company>" | "I applied to <Company>" | "reset job history" | --apify]
 allowed-tools: Bash, Read, Edit, Write, mcp__Apify__call-actor, mcp__Apify__get-actor-output, mcp__Apify__search-actors, mcp__Apify__fetch-actor-details
 ---
 
-You are running the job-search workflow **inline in the main turn**, not via the sub-agent.
+You run the job-search workflow **inline in the main turn**, not via the sub-agent.
 
 > **Why inline?** Claude Code sub-agents don't inherit the parent's MCP server access by default, so `mcp__Apify__*` tools aren't reachable from inside the `job-search` sub-agent. The sub-agent definition at `.claude/agents/job-search.md` is the operational spec; the slash command runs it.
 
-## Primary output: `jobs_ui/index.html`
+## Primary crawler: JobSpy (free, local)
+
+The default crawler is **[JobSpy](https://github.com/speedyapply/JobSpy)** — a Python library that scrapes Indeed, Glassdoor, Google Jobs, ZipRecruiter, and LinkedIn directly. No Apify, no subscription, no per-run cost. Lives at `C:/Users/prana/.job_search/crawl_jobspy.py`. Output schema is normalized to match the prior Apify actor's output, so `render_results.py` and the rest of the pipeline are unchanged.
+
+Apify (`fantastic-jobs/career-site-job-listing-api`) is kept as a fallback for cases where JobSpy yields too little (e.g. the Apify actor covers ATS direct sites that JobSpy doesn't — Workday/Greenhouse/Ashby/Lever).
+
+## Output
 
 Each scan **appends a new session** to `E:\_Resume-Curator\job_search\jobs_ui\data.js`. The user opens `jobs_ui/index.html` in their browser and toggles between sessions via the dropdown. HTML and CSS never need to be regenerated — the data file is the only thing that changes.
 
 - HTML/UI: `E:\_Resume-Curator\job_search\jobs_ui\index.html` (do NOT modify on every run)
 - Data:    `E:\_Resume-Curator\job_search\jobs_ui\data.js` (appended-to by `render_results.py`)
-- Backup MD: `~/.job_search/sessions/jobs_<date>_<window>.md` (still written for audit)
+- Backup MD: `~/.job_search/sessions/jobs_<date>_<window>.md`
+- Raw JobSpy JSON: `~/.job_search/raw_jobs/<date>_<window>.json`
 
 ## Arguments
 
-`$ARGUMENTS` may be empty or contain a time window / sub-command.
+`$ARGUMENTS` may be empty or contain a time window / sub-command / `--apify` flag.
 
 ### Parse step (do FIRST)
 
 1. **Empty / no time token** → window = `1d`.
 2. **`<N>d` or `<N>h` / `<N>w` / `<N>m`** → set `window_days` accordingly.
-3. **Sub-commands** (mutually exclusive with a crawl):
+3. **`--apify`** anywhere in args → use Apify fallback path (Step C-alt below) instead of JobSpy.
+4. **Sub-commands** (mutually exclusive with a crawl):
    - `I applied to <Company>` → append company (lowercased trimmed) to `preferences.applied_or_tracking` in `~/.job_search/state.json`, write back atomically, confirm to user, **STOP**.
    - `reset job history` → ask the user to confirm in one short message. If confirmed, clear `seen_job_ids` and write state. **STOP**.
-   - `show me jobs from <Company>` / `re-score <Company>` → run a targeted crawl: set `organizationSearch: [<Company>]` on the primary actor, keep the rest of the input but expand `limit` to 200 and drop `titleSearch` / `titleExclusionSearch`.
-4. Otherwise → full crawl with the parsed window.
+   - `show me jobs from <Company>` / `re-score <Company>` → JobSpy with `--company "<Company>"` (treats the company name as the search term, raises `results_per_search` to 50, drops the title-include filter).
+5. Otherwise → full crawl with the parsed window.
 
 Echo the parsed mode + window at the start:
 ```
-[mode: full crawl] [window: 7d] [sources: apify:fantastic-jobs]
+[mode: full crawl] [window: 7d] [source: jobspy (indeed,glassdoor,google,zip_recruiter)]
 ```
 
-## Execute the crawl (full or targeted)
+## Execute (JobSpy — default path)
 
 ### Step A — load state
 
-Read `~/.job_search/state.json`. Bind `prefs = state.preferences`, `seen = state.seen_job_ids`, `apify_cfg = prefs.crawl_sources.apify`. Verify `apify` is in `prefs.crawl_sources.enabled` — if not, error and stop.
+Read `~/.job_search/state.json`. Bind `prefs = state.preferences`, `seen = state.seen_job_ids`. Verify `crawl_jobspy.py` exists at `C:/Users/prana/.job_search/crawl_jobspy.py`.
 
-### Step B — compute datePostedAfter
+### Step B — run JobSpy
 
-`today = date.today()` (use `date -I` in bash if needed). `datePostedAfter = today - window_days`. Format `YYYY-MM-DD`.
-
-### Step C — call the primary Apify actor
-
-Call `mcp__Apify__call-actor` with:
-- `actor: "fantastic-jobs/career-site-job-listing-api"`
-- `input`:
-  ```json
-  {
-    "timeRange": "6m",
-    "datePostedAfter": "<computed>",
-    "limit": 200,
-    "descriptionType": "text",
-    "includeAi": true,
-    "includeLinkedIn": true,
-    "removeAgency": true,
-    "titleSearch": ["AI Engineer","LLM Engineer","Machine Learning Engineer","ML Engineer","Founding Engineer","Forward Deployed","Applied AI","Applied Scientist","Agentic","Research Engineer","Software Engineer AI","AI Engineer Associate","Junior AI Engineer","Associate AI Engineer","Entry Level AI"],
-    "titleExclusionSearch": ["Senior","Sr","Sr.","Lead","Staff","Principal","Director","VP","Head","Manager","Chief","Sales","Marketing","Recruiter","Designer","Frontend"],
-    "locationSearch": ["United States"],
-    "aiEmploymentTypeFilter": ["FULL_TIME"],
-    "aiExperienceLevelFilter": ["0-2","2-5"],
-    "aiTaxonomiesPrimaryFilter": ["Technology","Software","Engineering","Data & Analytics"]
-  }
-  ```
-- `callOptions: { memory: 1024, timeout: 300 }`
-- `previewOutput: false`
-
-For `show me jobs from <Company>` mode: add `organizationSearch: ["<Company>"]`, drop `titleSearch` / `titleExclusionSearch`, raise `limit` to 200.
-
-### Step D — fetch the full dataset to disk
-
-Call `mcp__Apify__get-actor-output` with the returned `datasetId`, requesting only the fields the scoring script needs:
-```
-id,date_posted,title,organization,locations_derived,countries_derived,remote_derived,url,source,ai_employment_type,ai_experience_level,ai_work_arrangement,ai_visa_sponsorship,ai_salary_minvalue,ai_salary_maxvalue,ai_salary_currency,ai_key_skills,ai_taxonomies_a,ai_core_responsibilities,ai_requirements_summary,description_text,linkedin_org_employees,linkedin_org_industry,linkedin_org_size,linkedin_org_recruitment_agency_derived,linkedin_org_specialties,linkedin_org_description
+```bash
+python "C:/Users/prana/.job_search/crawl_jobspy.py" \
+  --window-days <N> \
+  --location "United States" \
+  --results-per-search 30 \
+  --output "C:/Users/prana/.job_search/raw_jobs/$(date -I)_<N>d.json"
 ```
 
-The MCP response will exceed context and auto-save to a tool-results path — capture that path from the error message. (Expected for 100 items.)
+Optional flags:
+- `--include-linkedin` — adds LinkedIn (slow, often rate-limits; opt-in only).
+- `--company "<Name>"` — single-company crawl (for `show me jobs from <Company>` mode).
+- `--terms "Term1" "Term2" ...` — override the default 6-term search list.
 
-### Step E — score + append to data.js + archive
+The script handles:
+- Multi-site, multi-term scrape via JobSpy's `scrape_jobs()`
+- URL-level dedup across sites and search terms
+- Pre-drop of obvious senior/staff/lead/manager titles before scoring
+- Normalisation to the same Apify-shape JSON that `render_results.py` expects
 
-Run the render script. It writes:
-1. A new session entry into `jobs_ui/data.js` (newest-first).
-2. A backup MD at `~/.job_search/sessions/jobs_<date>_<window>.md`.
-3. Atomic update of `~/.job_search/state.json` (appends shown `job_ids` + `session_log` entry).
+### Step C — score + append to data.js + archive
+
+The crawl script echoes its output path to stdout. Pass that path to the renderer:
 
 ```bash
 python "C:/Users/prana/.job_search/render_results.py" \
-  --dataset "<path-from-step-D>" \
+  --dataset "<path-from-step-B>" \
   --window-days <N> \
   --today "$(date -I)"
 ```
 
-The script enforces:
+The renderer enforces:
 - Title-level drop: Senior/Sr/Lead/Staff/Principal/Manager/Director/VP/Head/Chief
 - Experience drop: `ai_experience_level` in {5-10, 10+}, or JD requires 4+ yrs
-- Sponsorship hard filter: drops "must be authorized to work without sponsorship" JDs (NOT down-rank)
+- Sponsorship hard filter: drops "must be authorized to work without sponsorship" JDs
 - Defense / clearance / citizenship-gated drops
 - Non-US / recruitment-agency drops
 - Current employer (`alfred_`) + already-applied drops
 - Dedup against `seen_job_ids`
 - Dedup duplicate postings within the run (same company + normalised title)
 
-### Step F — relay output
+It writes:
+1. A new session entry into `jobs_ui/data.js` (newest-first).
+2. A backup MD at `~/.job_search/sessions/jobs_<date>_<window>.md`.
+3. Atomic update of `~/.job_search/state.json` (appends shown `job_ids` + `session_log` entry).
 
-The script prints a short summary with the HTML path and the MD path. Relay verbatim. Also tell the user explicitly:
+## Execute (Apify — fallback path, only when `--apify` is passed)
+
+Use the Apify route if JobSpy is unavailable or coverage is insufficient. The Apify actor covers ATS direct sites (Workday, Greenhouse, Ashby, Lever) that JobSpy doesn't.
+
+### Step C-alt — call the Apify actor
+
+`mcp__Apify__call-actor` with `actor: "fantastic-jobs/career-site-job-listing-api"`:
+```json
+{
+  "timeRange": "6m",
+  "datePostedAfter": "<today minus N days>",
+  "limit": 200,
+  "descriptionType": "text",
+  "includeAi": true,
+  "includeLinkedIn": true,
+  "removeAgency": true,
+  "titleSearch": ["AI Engineer","LLM Engineer","Machine Learning Engineer","ML Engineer","Founding Engineer","Forward Deployed","Applied AI","Applied Scientist","Agentic","Research Engineer","Software Engineer AI","AI Engineer Associate","Junior AI Engineer","Associate AI Engineer","Entry Level AI"],
+  "titleExclusionSearch": ["Senior","Sr","Sr.","Lead","Staff","Principal","Director","VP","Head","Manager","Chief","Sales","Marketing","Recruiter","Designer","Frontend"],
+  "locationSearch": ["United States"],
+  "aiEmploymentTypeFilter": ["FULL_TIME"],
+  "aiExperienceLevelFilter": ["0-2","2-5"],
+  "aiTaxonomiesPrimaryFilter": ["Technology","Software","Engineering","Data & Analytics"]
+}
+```
+`callOptions: { memory: 1024, timeout: 300 }`, `previewOutput: false`.
+
+For `show me jobs from <Company>` mode under `--apify`: add `organizationSearch: ["<Company>"]`, drop `titleSearch` / `titleExclusionSearch`, raise `limit` to 200.
+
+### Step D-alt — fetch full dataset
+
+`mcp__Apify__get-actor-output` with the returned `datasetId`, requesting the same fields list as before. Save to the tool-results path; pass that path to `render_results.py` exactly like the JobSpy path.
+
+### Pre-flight for Apify
+
+If the actor returns `"Maximum charged results must be greater than zero"`, the per-run charge cap in the Apify console is set to 0. The user must raise it in console.apify.com → actor settings → *Maximum charged results per run* before retrying.
+
+## Step F — relay output
+
+The renderer prints a short summary with the HTML path and the MD path. Relay verbatim. Then explicitly:
 
 ```
 ✅ Done. Open in browser: file:///E:/_Resume-Curator/job_search/jobs_ui/index.html
+Live: https://pranavmishra17.github.io/skill-check-JobSearch/
 ```
 
-Optionally show top 10–15 inline as preview blocks (compact MD format from the script's MD output), then point them at the HTML for the rest + filters.
+Optionally show top 10–15 inline as preview blocks, then point at the HTML for the rest.
 
 ## Rules
 
-- **Never fabricate.** If the actor errors, surface the error verbatim.
-- **Allowlist is hard.** Don't crawl actors outside `apify_cfg.primary_actor` / `apify_cfg.secondary_actor` without updating state first.
-- **Cost ceiling ~$3 per run.** Primary actor at FREE tier is $0.012/job × 200 = $2.40; within budget.
-- **Do not regenerate `jobs_ui/index.html`.** The HTML is a one-time write. If a UI improvement is genuinely needed, ask the user first.
-- **Append-only `data.js`.** The script overwrites only entries with the same session id (same date + window). Past sessions remain visible.
+- **Never fabricate.** If JobSpy or the actor errors, surface the error verbatim.
+- **Default to JobSpy.** Only use Apify when the user passes `--apify` or JobSpy fails / coverage is too thin.
+- **Cost.** JobSpy is free (no API). Apify path is ~$2.40 per 200-job crawl on the FREE tier — confirm with user before running large Apify crawls.
+- **Do not regenerate `jobs_ui/index.html`.** Static asset.
+- **Append-only `data.js`.** The renderer overwrites only entries with the same session id (same date + window). Past sessions remain visible.
 
 ## Examples
 
-- `/job-search` → window `1d`, full crawl
-- `/job-search 7d` → window `7d`, full crawl
-- `/job-search 14d, focus on agentic AI` → window `14d`, full crawl (extra emphasis is informational)
-- `/job-search show me jobs from Cohere` → targeted Cohere crawl across last 7d (default)
+- `/job-search` → JobSpy, 1d window
+- `/job-search 7d` → JobSpy, 7d window
+- `/job-search 14d, focus on agentic AI` → JobSpy, 14d (the extra phrase is informational)
+- `/job-search show me jobs from Cohere` → JobSpy with `--company "Cohere"`
+- `/job-search 7d --apify` → Apify fallback path, 7d window (e.g. if you specifically want ATS-direct coverage)
 - `/job-search I applied to Anthropic` → state mutation only, no crawl
 - `/job-search reset job history` → destructive; confirm first
