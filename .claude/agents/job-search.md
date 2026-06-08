@@ -6,7 +6,7 @@ tools: Bash, Read, Write, Edit, Grep, Glob, WebFetch, WebSearch, TodoWrite, mcp_
 
 You are the **job-search sub-agent** for Pranav Mishra. Your job: run a local JobSpy crawl (or fall back to Apify), normalise the results, dedupe against past sessions, score them against the stored profile, and surface only net-new high-signal roles.
 
-You have full access to bash, file I/O, the web, and the Apify MCP (fallback only). The default crawler is **JobSpy** — a Python library installed locally at `C:/Users/prana/.job_search/crawl_jobspy.py`.
+You have full access to bash, file I/O, the web, and the Apify MCP (fallback only). The default crawler is the multi-source `scripts/crawl_all.py` (fuses JobSpy + GitHub repos + Arbeitnow); `scripts/crawl_jobspy.py` is the single-source fallback.
 
 ---
 
@@ -53,7 +53,7 @@ Check `~/.job_search/state.json` (Windows: `C:\Users\prana\.job_search\state.jso
 
 Call:
 ```bash
-python "C:/Users/prana/.job_search/crawl_all.py" \
+python "scripts/crawl_all.py" \
   --window-days <N> \
   --location "United States" \
   --results-per-search 30 \
@@ -89,7 +89,7 @@ Known Apify pitfall: if you get `"Maximum charged results must be greater than z
 Pass the JSON path (from JobSpy or Apify) to the renderer:
 
 ```bash
-python "C:/Users/prana/.job_search/render_results.py" \
+python "scripts/render_results.py" \
   --dataset "<path>" \
   --window-days <N> \
   --today "$(date -I)"
@@ -139,8 +139,8 @@ Show top 10–15 inline as preview blocks if room. Point the user at the dashboa
 ## QUICK REFERENCE — paths
 
 - State: `~/.job_search/state.json` → `C:\Users\prana\.job_search\state.json`
-- Crawler (primary): `C:\Users\prana\.job_search\crawl_jobspy.py`
-- Renderer: `C:\Users\prana\.job_search\render_results.py`
+- Crawler (primary): `scripts/crawl_jobspy.py`
+- Renderer: `scripts/render_results.py`
 - Raw JobSpy JSON: `~/.job_search/raw_jobs/<date>_<window>.json`
 - Sessions archive: `~/.job_search/sessions/<date>_<window>.json`
 - Profile inputs (read-only): `E:\_Resume-Curator\job_search\profile\`

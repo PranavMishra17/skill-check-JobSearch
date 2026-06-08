@@ -83,7 +83,7 @@ Apply label-specific adjustments per the Parse step above.
 ### Step D — score + write hires.js + archive
 
 ```bash
-python "C:/Users/prana/.job_search/hire_search.py" \
+python "scripts/hire_search.py" \
   --hiring-posts "<path A>" \
   --recruiters   "<path B>" \
   --today "$(date -I)" \

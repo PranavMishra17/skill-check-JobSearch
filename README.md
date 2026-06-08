@@ -68,6 +68,12 @@ The repo's tree:
 │   ├── RESUME.pdf
 │   ├── PORTFOLIO.pdf
 │   └── *.md
+├── scripts/                       crawlers, scorer, audit tool — all Python
+│   ├── crawl_all.py               multi-source orchestrator (default)
+│   ├── crawl_jobspy.py            JobSpy-only crawler (single-source fallback)
+│   ├── render_results.py          scoring + filtering + dedup + data.js write
+│   ├── inspect_drops.py           per-bucket drop audit (debug tool)
+│   └── hire_search.py             hire-search scorer + normaliser
 └── .claude/
     ├── agents/                    sub-agent specs (documentation)
     └── commands/                  slash command runtimes
@@ -75,13 +81,29 @@ The repo's tree:
         └── hire-search.md
 ```
 
+> Personal state (your `state.json`, past sessions, raw crawl JSON) stays at
+> `~/.job_search/` outside the repo. The scripts read from / write to that
+> directory by default — no path edits needed when you clone.
+
 ### 3. Install JobSpy
 
 ```bash
 pip install -U python-jobspy
 ```
 
-That's it for `/job-search`. No API keys, no accounts, runs entirely on your machine.
+That's it for `/job-search`. No API keys, no accounts, runs entirely on your machine. The scripts in `scripts/` use `urllib` from stdlib for everything else (GitHub fetches, Arbeitnow API).
+
+### 3a. Tuning the title-scope filter
+
+`scripts/render_results.py` has a `TITLE_SCOPE` list that decides which job titles to keep. After any crawl, run the audit tool to see what got dropped:
+
+```bash
+python scripts/inspect_drops.py \
+  --dataset ~/.job_search/raw_jobs/<latest>.json \
+  --window-days 3 --samples 5
+```
+
+It prints every drop bucket with sample items and the matched snippet. If you spot a false positive, add a substring to `TITLE_SCOPE` in `scripts/render_results.py` and re-run.
 
 ### 3b. (Optional) Install the Apify MCP server
 

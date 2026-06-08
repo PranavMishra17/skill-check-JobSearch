@@ -10,7 +10,7 @@ You run the job-search workflow **inline in the main turn**, not via the sub-age
 
 ## Primary crawler: multi-source `crawl_all.py` (free, local)
 
-The default crawler is **`C:/Users/prana/.job_search/crawl_all.py`** — a multi-source orchestrator that fuses four free sources into one Apify-shape JSON:
+The default crawler is **`scripts/crawl_all.py`** — a multi-source orchestrator that fuses four free sources into one Apify-shape JSON:
 
 1. **[JobSpy](https://github.com/speedyapply/JobSpy)** — Indeed, Google Jobs, Glassdoor (LinkedIn opt-in). 17 search terms covering AI/ML/agentic/founding/forward-deployed/MLOps/research/etc.
 2. **GitHub `SimplifyJobs/New-Grad-Positions`** — `listings.json` parsed directly, filtered to AI/ML titles.
@@ -54,12 +54,12 @@ Echo the parsed mode + window at the start:
 
 ### Step A — load state
 
-Read `~/.job_search/state.json`. Bind `prefs = state.preferences`, `seen = state.seen_job_ids`. Verify `crawl_jobspy.py` exists at `C:/Users/prana/.job_search/crawl_jobspy.py`.
+Read `~/.job_search/state.json`. Bind `prefs = state.preferences`, `seen = state.seen_job_ids`. Verify `crawl_jobspy.py` exists at `scripts/crawl_jobspy.py`.
 
 ### Step B — run the multi-source crawler
 
 ```bash
-python "C:/Users/prana/.job_search/crawl_all.py" \
+python "scripts/crawl_all.py" \
   --window-days <N> \
   --location "United States" \
   --results-per-search 30 \
@@ -87,7 +87,7 @@ If JobSpy yields little (e.g. all sites 429), the GitHub + Arbeitnow sources sti
 The crawl script echoes its output path to stdout. Pass that path to the renderer:
 
 ```bash
-python "C:/Users/prana/.job_search/render_results.py" \
+python "scripts/render_results.py" \
   --dataset "<path-from-step-B>" \
   --window-days <N> \
   --today "$(date -I)"
@@ -154,6 +154,23 @@ Live: https://pranavmishra17.github.io/skill-check-JobSearch/
 ```
 
 Optionally show top 10–15 inline as preview blocks, then point at the HTML for the rest.
+
+## Audit tool — when a yield seems low
+
+After any crawl, run the drop auditor on the same dataset:
+
+```bash
+python "scripts/inspect_drops.py" \
+  --dataset "<path-from-step-B>" \
+  --window-days <N> \
+  --samples 5
+```
+
+It prints every drop bucket (title-out-of-scope, sponsorship, citizenship,
+YoE-required, out-of-window, already-shown-prior-run, etc.) with sample items
+and the snippet that triggered each filter. Use it to find false positives,
+then edit `TITLE_SCOPE` / `TITLE_EXCLUDE` / sponsorship patterns in
+`scripts/render_results.py`.
 
 ## Rules
 
