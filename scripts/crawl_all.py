@@ -30,7 +30,7 @@ JOBSPY_TERMS = [
     "Software Engineer AI", "Software Engineer ML",
 ]
 
-JOBSPY_SITES_DEFAULT = ["indeed", "google", "glassdoor"]  # zip_recruiter excluded — 429s aggressively
+JOBSPY_SITES_DEFAULT = ["indeed", "google", "glassdoor"]  # LinkedIn opt-in (slow); ZipRecruiter excluded — 429s aggressively
 
 # Loosened pre-filter — only obvious senior/non-engineering titles.
 # render_results.py does the proper title-scope filtering.
@@ -52,6 +52,16 @@ GITHUB_REPOS = [
         "name": "speedyapply/2026-AI-College-Jobs",
         "kind": "speedyapply_md",
         "url": "https://raw.githubusercontent.com/speedyapply/2026-AI-College-Jobs/main/NEW_GRAD_USA.md",
+    },
+    {
+        "name": "speedyapply/2026-SWE-College-Jobs",
+        "kind": "speedyapply_md",
+        "url": "https://raw.githubusercontent.com/speedyapply/2026-SWE-College-Jobs/main/NEW_GRAD_USA.md",
+    },
+    {
+        "name": "jobright-ai/2026-Software-Engineer-New-Grad",
+        "kind": "speedyapply_md",  # same format
+        "url": "https://raw.githubusercontent.com/jobright-ai/2026-Software-Engineer-New-Grad/master/README.md",
     },
 ]
 
@@ -282,7 +292,7 @@ def crawl_simplify_json(repo_meta, window_days, verbose):
 
 # ───────────────────────── source: GITHUB speedyapply markdown ─────────────────────────
 
-_MD_ROW_RE = re.compile(r"^\|.+\|.+\|.+\|.+\|.+\|.+\|\s*$")
+_MD_ROW_RE = re.compile(r"^\|.+\|.+\|.+\|.+\|.+\|\s*$")  # at least 5 cells (Company|Role|Loc|Apply|Age)
 _MD_DIVIDER_RE = re.compile(r"^\|\s*[:-]+\s*\|")
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _HREF_RE = re.compile(r'href="([^"]+)"')
@@ -321,9 +331,16 @@ def crawl_speedyapply_md(repo_meta, window_days, verbose):
         if not _MD_ROW_RE.match(line) or _MD_DIVIDER_RE.match(line):
             continue
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
-        if len(cells) < 6:
+        if len(cells) < 5:
             continue
-        company_html, position, location, salary, posting_html, age = cells[:6]
+
+        # Column-count-agnostic: Apply is always second-to-last, Age is always last.
+        # Layouts: 5 cells = Company|Role|Loc|Apply|Age
+        #          6 cells = Company|Role|Loc|Salary|Apply|Age
+        company_html, position, location = cells[0], cells[1], cells[2]
+        age = cells[-1]
+        posting_html = cells[-2]
+        salary = cells[3] if len(cells) >= 6 else ""
 
         # Company: "↳" means "same as previous"
         if company_html.strip() in {"↳", "&#8627;", ""}:
@@ -355,13 +372,14 @@ def crawl_speedyapply_md(repo_meta, window_days, verbose):
 
         # Salary parse: "$172k/yr"
         s_min = None
-        sal_m = re.search(r"\$?\s*(\d+(?:\.\d+)?)\s*([kK]?)", _strip_html(salary))
-        if sal_m:
-            try:
-                v = float(sal_m.group(1))
-                if "k" in sal_m.group(2).lower(): v *= 1000
-                s_min = v
-            except: pass
+        if salary:
+            sal_m = re.search(r"\$?\s*(\d+(?:\.\d+)?)\s*([kK]?)", _strip_html(salary))
+            if sal_m:
+                try:
+                    v = float(sal_m.group(1))
+                    if "k" in sal_m.group(2).lower(): v *= 1000
+                    s_min = v
+                except: pass
 
         items.append(_build_item(
             company=company or "", title=title, url=url, description=title,
