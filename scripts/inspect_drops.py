@@ -32,6 +32,15 @@ CITIZENSHIP_PATS = [
     r"active clearance", r"security clearance",
     r"us citizens? or green card holders? only",
     r"green card holders? only", r"only.{0,30}u\.s\. citizens",
+    r"\bGC (?:holders?|only)\b", r"\bUSC[/ ]GC\b", r"\bUSC only\b",
+    r"green card required", r"permanent residents? only",
+]
+CONTRACT_DROP_PATS = [
+    r"\bC2C(?:\s+only)?\b", r"\bcorp[\- ]to[\- ]corp\b",
+    r"\b1099(?:\s+only)?\b",
+    r"\bW2 only\b", r"\bw-?2 only\b",
+    r"contract(?:or)?[\- ]only", r"contractors? only",
+    r"this is a contract (?:role|position)",
 ]
 TITLE_SENIOR_DROP = re.compile(
     r"\b(senior|sr\.?|lead|staff|principal|manager|director|vp|head\s+of|sr\s+staff|chief)\b", re.I)
@@ -113,6 +122,7 @@ def should_drop(it, applied_lower, seen_ids, window_days, today):
             return "defense-employer"
 
     if any_re(desc, NO_SPONSOR_PATS): return "no-sponsorship"
+    if any_re(desc, CONTRACT_DROP_PATS): return "contract/1099/C2C-only"
     if it.get("ai_visa_sponsorship") is False:
         if re.search(r"sponsor(?:ship)?", desc, re.I) and re.search(r"\b(not|no|without|unable|do not)\b.{0,30}sponsor", desc, re.I):
             return "no-sponsorship-ai+text"

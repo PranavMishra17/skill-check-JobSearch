@@ -67,7 +67,19 @@ YC_TECHSTARS_HINT = {"yc","y combinator","y-combinator","techstars"}
 
 CITIZENSHIP_PATS = [r"\bus citizenship\b",r"\bu\.s\. citizenship\b",r"must be a us citizen",r"must be a u\.s\. citizen",
                     r"\bts/sci\b",r"\btop secret\b",r"\bsecret clearance\b",r"active clearance",r"security clearance",
-                    r"us citizens? or green card holders? only",r"green card holders? only",r"only.{0,30}u\.s\. citizens"]
+                    r"us citizens? or green card holders? only",r"green card holders? only",r"only.{0,30}u\.s\. citizens",
+                    # 2026-06-09 — abbreviations / shorthand
+                    r"\bGC (?:holders?|only)\b", r"\bUSC[/ ]GC\b", r"\bUSC only\b",
+                    r"green card required", r"permanent residents? only"]
+
+# Contract / non-W2 patterns — Pranav needs W-2 FT; C2C / 1099-only roles drop
+CONTRACT_DROP_PATS = [
+    r"\bC2C(?:\s+only)?\b", r"\bcorp[\- ]to[\- ]corp\b",
+    r"\b1099(?:\s+only)?\b",
+    r"\bW2 only\b", r"\bw-?2 only\b",
+    r"contract(?:or)?[\- ]only", r"contractors? only",
+    r"this is a contract (?:role|position)",
+]
 
 NO_SPONSOR_PATS = [
     r"must be (?:legally )?(?:authoriz(?:ed)?|allowed) to work in the (?:us|u\.s\.|united states)(?: without (?:visa )?sponsorship)?",
@@ -236,6 +248,7 @@ def should_drop(it, applied_lower):
 
     # Sponsorship hard filter (NEW): explicit no-sponsor language drops the role
     if any_re(desc, NO_SPONSOR_PATS): return "no-sponsorship"
+    if any_re(desc, CONTRACT_DROP_PATS): return "contract/1099/C2C-only"
     # Also drop if AI field marks sponsorship false AND there's matching language
     if it.get("ai_visa_sponsorship") is False:
         # AI is often wrong; only drop when JD also contains an exclusionary phrase
@@ -276,11 +289,17 @@ for it in items:
         continue
     it["_job_id"] = jid
     s_sk, matched = skill_match(it)
-    s_d, s_s, s_c, s_l, s_r = domain_score(it), seniority_pts(it), company_pts(it), location_pts(it), recency_pts(it)
-    s_sp, sp_label = sponsorship(it)
-    total = max(0, min(100, s_sk + s_d + s_s + s_c + s_l + s_r + s_sp))
+    s_d, s_s = domain_score(it), seniority_pts(it)
+    # Sponsorship label kept for UI badge only — NOT in score
+    _, sp_label = sponsorship(it)
+    # Scoring uses only skill / domain / seniority. Max raw = 30 + 25 + 15 = 70.
+    # Rescale to /100 so UI stays on a 0-100 axis. Location/recency/company/
+    # sponsorship were removed from scoring on 2026-06-09 — they're either
+    # hard filters (sponsorship/citizenship) or noise (location/recency/company).
+    raw = max(0, s_sk + s_d + s_s)
+    total = round(raw * 100 / 70)
     scored.append({"it": it, "matched": matched, "label": sp_label,
-                   "parts": {"skill": s_sk, "domain": s_d, "sen": s_s, "co": s_c, "loc": s_l, "rec": s_r, "spon": s_sp},
+                   "parts": {"skill": s_sk, "domain": s_d, "sen": s_s},
                    "total": total})
 
 scored.sort(key=lambda x: -x["total"])
