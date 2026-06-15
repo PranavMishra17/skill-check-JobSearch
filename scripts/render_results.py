@@ -100,11 +100,11 @@ TITLE_SCOPE = [
     "ai engineer","ml engineer","machine learning engineer","llm engineer",
     "founding engineer","forward deployed","forward-deployed",
     "applied ai","applied scientist","applied ml",
-    "research engineer","research scientist",
+    "research scientist",  # NOTE: "research engineer" removed 2026-06-09 (too academic)
     "ai/ml","ai engineering","software engineer","software developer",
     "ai infrastructure","ml infrastructure","platform engineer",
     "ai researcher","ml researcher","deep learning engineer",
-    "ai platform","ml platform","ai systems","data scientist","ai associate",
+    "ai platform","ml platform","ai systems","ai associate",  # NOTE: "data scientist" removed 2026-06-09 (too analytics-flavored)
     "computer scientist","generative ai",
     # 2026 agentic / LLM-tooling wave
     "agentic","ai agent","agent engineer","agentic engineer","agentic ai",

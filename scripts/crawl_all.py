@@ -68,7 +68,7 @@ GITHUB_REPOS = [
 # AI/ML keywords used to filter generic feeds (Arbeitnow, generic-SWE repos)
 AI_TITLE_KEYWORDS = [
     "ai", "ml", "machine learning", "llm", "deep learning", "agentic",
-    "data scientist", "research engineer", "applied scientist", "mlops",
+    "applied scientist", "mlops",  # "data scientist" + "research engineer" removed 2026-06-09
     "generative", "founding engineer", "forward deployed",
 ]
 
