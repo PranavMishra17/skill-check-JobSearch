@@ -147,6 +147,9 @@
   .btn-apply{background:var(--apply-bg);border-color:#2c4032;color:var(--apply-fg);font-weight:500}
   .btn-apply:hover{background:var(--apply-bg-hover)}
   .applied-flag{font-size:11px;color:var(--apply-fg);background:#1a2620;padding:3px 7px;border-radius:3px;border:1px solid #2c4032}
+  .curated-flag{font-size:11px;color:#c4a8ff;background:#241e34;padding:3px 7px;border-radius:3px;border:1px solid #3d3258;text-decoration:none;margin-right:6px;font-family:var(--mono);letter-spacing:.02em}
+  .curated-flag:hover{background:#2a2440;color:#e2d4ff}
+  .job.curated-job{border-left:2px solid #6b4f9e}
   .unmark-inline{font-size:11px;color:var(--muted);text-decoration:none;cursor:pointer;background:transparent;border:none;padding:3px 6px}
   .unmark-inline:hover{color:var(--fg);text-decoration:underline}
 
@@ -692,7 +695,7 @@
           (i === 0 ? '' : '<span class="sep">·</span>') + `<span>${escapeHtml(b)}</span>`
         ).join('') + `<span class="sep">·</span><span class="badge ${sponsorClass}">${sponsorLabel}</span>`;
         return `
-          <div class="job ${isApplied ? 'applied' : ''}" data-key="${escapeHtml(key)}">
+          <div class="job ${isApplied ? 'applied' : ''} ${j.curated ? 'curated-job' : ''}" data-key="${escapeHtml(key)}">
             <button class="dismiss-btn" data-key="${escapeHtml(key)}" title="Dismiss this role">×</button>
             <div class="score-cell">${ringSvg(j.score)}</div>
             <div class="info-cell">
@@ -702,6 +705,7 @@
               <div class="meta">${metaHtml}</div>
               ${j.description ? `<div class="desc">${escapeHtml(j.description)}</div>` : ''}
               <div class="actions">
+                ${j.curated ? `<a class="curated-flag" href="file:///${('E:/_Resume-Curator/op/'+j.curated.folder+'/_Pranav_Mishra_Resume.pdf')}" target="_blank" title="${escapeHtml(j.curated.folder)} · ${j.curated.pages || 1}p · ${escapeHtml(j.curated.coverage_delta||'')}">Curated → ${escapeHtml(j.curated.folder)}</a>` : ''}
                 ${isApplied
                   ? `<span class="applied-flag">Applied ✓</span><button class="unmark-inline" data-unmark="${escapeHtml(key)}">unmark</button>`
                   : `<a class="btn btn-apply" href="${escapeHtml(j.url)}" target="_blank" rel="noopener" data-apply-link>Apply →</a>`}

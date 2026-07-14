@@ -1,0 +1,149 @@
+{
+  "_meta": {
+    "purpose": "Answers Pranav's default responses to standard job-application form fields. Copy this file to ~/.job_search/answers.json and fill any TODO fields. Never commit the real file — it lives outside the repo.",
+    "conventions": [
+      "Each field has a picked default in the string value.",
+      "Alternative options are listed alongside as _<field>_options arrays.",
+      "TODO markers mean the user must supply it before /apply can run cleanly.",
+      "Fields under 'sensitive' MUST NEVER be auto-filled by /apply — always leave blank."
+    ]
+  },
+
+  "identity": {
+    "first_name": "Pranav",
+    "last_name": "Mishra",
+    "middle_initial": "P",
+    "legal_full_name": "Pranav P. Mishra",
+    "preferred_name": "Pranav",
+    "pronouns": "he/him",
+    "_pronouns_options": ["he/him", "she/her", "they/them", "Prefer not to say"]
+  },
+
+  "contact": {
+    "email": "pmishr23@uic.edu",
+    "_email_alt": "",
+    "phone": "+1-773-280-4615",
+    "phone_country_code": "+1"
+  },
+
+  "location": {
+    "city": "New York",
+    "state": "NY",
+    "state_full": "New York",
+    "country": "United States",
+    "country_code": "US",
+    "zip_code": "TODO — your NYC zip",
+    "street_address_1": "TODO — sometimes required by Workday/iCIMS; leave blank otherwise",
+    "street_address_2": "",
+    "current_timezone": "America/New_York"
+  },
+
+  "links": {
+    "linkedin": "https://linkedin.com/in/pranavgamedev",
+    "github": "https://github.com/PranavMishra17",
+    "portfolio": "https://portfolio-pranav-mishra-paranoid.vercel.app",
+    "personal_website": "",
+    "twitter_x": "",
+    "google_scholar": ""
+  },
+
+  "work_authorization": {
+    "authorized_to_work_us_now": "Yes",
+    "requires_sponsorship_now": "No",
+    "requires_sponsorship_in_future": "Yes",
+    "_sponsorship_now_or_future_answer": "Yes — I will require H-1B sponsorship in the future. My F-1 STEM OPT is valid through July 2028.",
+    "visa_status": "F-1 STEM OPT",
+    "visa_expiration_date": "2028-07-01",
+    "citizen_of": "India",
+    "us_permanent_resident": "No",
+    "requires_visa_transfer": "No"
+  },
+
+  "compensation": {
+    "expected_salary_usd": 125000,
+    "minimum_acceptable_usd": 86000,
+    "salary_range_answer_narrow": "$110,000 – $140,000",
+    "salary_range_answer_wide": "$100,000 – $160,000",
+    "single_number_answer_usd": 125000,
+    "currency": "USD",
+    "open_to_equity": "Yes",
+    "notice_period_weeks": 2,
+    "earliest_start_answer": "Two weeks after offer acceptance"
+  },
+
+  "experience": {
+    "years_total_professional": 2,
+    "years_relevant_ai_ml": 2,
+    "current_employer": "alfred_",
+    "current_title": "Founding LLM Engineer",
+    "current_since_month_year": "April 2026",
+    "current_still_employed": "Yes"
+  },
+
+  "education": {
+    "highest_degree": "Master's Degree",
+    "school": "University of Illinois at Chicago",
+    "field_of_study": "Computer Science",
+    "graduation_month": "May",
+    "graduation_year": "2025",
+    "gpa": "TODO — 3.x/4.0 or leave 'Prefer not to disclose'",
+    "gpa_scale": "4.0",
+    "_gpa_options": ["3.8", "3.85", "3.9", "Prefer not to disclose"],
+    "prior_degree": "Bachelor's Degree",
+    "prior_school": "Dayananda Sagar College of Engineering",
+    "prior_field": "Computer Science and Engineering",
+    "prior_graduation": "June 2023"
+  },
+
+  "job_preferences": {
+    "employment_type": "Full-time",
+    "_employment_type_options": ["Full-time", "Contract", "Internship"],
+    "remote_ok": true,
+    "hybrid_ok": true,
+    "onsite_ok": true,
+    "willing_to_relocate": "Yes",
+    "willing_to_travel_pct": "Up to 25%",
+    "how_heard_about_role": "Company website",
+    "_how_heard_options": ["Company website", "LinkedIn", "Google search", "Referred by employee", "Job board", "GitHub / open source"],
+    "referred_by_name": "",
+    "referred_by_email": ""
+  },
+
+  "diversity_eeo": {
+    "_note": "Every field here is legally optional. All defaults are 'Prefer not to say' unless you want to disclose.",
+    "gender": "Prefer not to say",
+    "_gender_options": ["Male", "Female", "Non-binary", "Prefer not to say"],
+    "race_ethnicity": "Prefer not to say",
+    "_race_ethnicity_options": ["Asian", "White", "Black or African American", "Hispanic or Latino", "Two or more races", "Prefer not to say"],
+    "hispanic_latino": "Prefer not to say",
+    "veteran_status": "I am not a veteran",
+    "_veteran_options": ["I am not a veteran", "I am a veteran", "Prefer not to say"],
+    "disability_status": "Prefer not to say",
+    "_disability_options": ["Yes, I have a disability", "No, I do not have a disability", "Prefer not to say"],
+    "lgbtq": "Prefer not to say"
+  },
+
+  "documents": {
+    "resume_pdf_path": "profile/RESUME Pranav_Mishra.pdf",
+    "_resume_pdf_alt_paths": ["profile/PRANAV_PORTFOLIO.pdf"],
+    "cover_letter_template_path": "scripts/covers/default.md",
+    "transcript_path": ""
+  },
+
+  "typical_short_answers": {
+    "_note": "Fallback stock answers for questions where the JD has no specific hook. The /apply command should read the JD first and write something more tailored using the voice rules — these are used only when the question is completely generic (e.g. 'Anything else?').",
+    "greatest_strength": "I own vertical slices end to end — from design through production and iteration on real user data. I get comfortable with the whole stack rather than one layer.",
+    "greatest_weakness": "I over-invest in eval and observability early. It slows the first few days of a project but pays off later, and I've gotten better at picking when it's worth it.",
+    "anything_else": ""
+  },
+
+  "sensitive": {
+    "_note": "NEVER auto-fill any of these. If a form asks, /apply should skip the field and log it for manual review.",
+    "ssn": "NEVER_AUTOFILL",
+    "date_of_birth": "NEVER_AUTOFILL",
+    "government_id": "NEVER_AUTOFILL",
+    "bank_account": "NEVER_AUTOFILL",
+    "drivers_license": "NEVER_AUTOFILL",
+    "passport_number": "NEVER_AUTOFILL"
+  }
+}

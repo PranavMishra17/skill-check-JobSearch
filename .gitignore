@@ -4,6 +4,16 @@
 
 # State / sessions are stored outside the repo (~/.job_search/) so no .gitignore entry needed
 
+# /apply personal data — real answers file has your address, phone, GPA, EEO answers
+# (the .example.json file IS committed as the schema template)
+scripts/answers.json
+answers.json
+
+# Cover-letter templates — commit README.md but not personal templates
+scripts/covers/default.md
+scripts/covers/*.md
+!scripts/covers/README.md
+
 # OS / editor
 .DS_Store
 Thumbs.db
