@@ -125,10 +125,12 @@ def main():
         })
 
     supported.sort(key=lambda x: -(x["score"] or 0))
-    # Cut to top-percent
-    cut = max(1, int(round(len(supported) * args.top_percent / 100)))
+    # If --top-n is set, it is the primary cut (absolute count).
+    # Otherwise fall back to --top-percent of the supported list.
     if args.top_n:
-        cut = min(cut, args.top_n)
+        cut = args.top_n
+    else:
+        cut = max(1, int(round(len(supported) * args.top_percent / 100)))
     picked = supported[:cut]
 
     out = {

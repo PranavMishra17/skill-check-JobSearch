@@ -36,8 +36,8 @@
 
   "contact": {
     "email": "pmishr23@uic.edu",
-    "_email_alt": "",
-    "phone": "+1-773-280-4615",
+    "_email_alt": "pranavgamedev.17@gmail.com",
+    "phone": "773-280-4615",
     "phone_country_code": "+1"
   },
 
@@ -47,8 +47,8 @@
     "state_full": "New York",
     "country": "United States",
     "country_code": "US",
-    "zip_code": "TODO — your NYC zip",
-    "street_address_1": "TODO — Workday/iCIMS often demand it; leave blank otherwise",
+    "zip_code": "10065",
+    "street_address_1": "329 East 63rd Street",
     "street_address_2": "",
     "current_timezone": "America/New_York",
     "resides_in": "New York City"
@@ -60,7 +60,7 @@
     "portfolio":        "https://portfolio-pranav-mishra-paranoid.vercel.app",
     "personal_website": "",
     "twitter_x":        "",
-    "google_scholar":   "",
+    "google_scholar":   "https://scholar.google.com/citations?hl=en&user=_Twn_owAAAAJ",
     "arxiv_metarag":         "https://doi.org/10.48550/arXiv.2512.05411",
     "arxiv_teammedagents":   "https://arxiv.org/abs/2508.08115",
     "github_metarag":        "https://github.com/PranavMishra17/Metadata-Enrichment-with-LLMs-for-RAGs-Internal-Knowledge-Retrieval",
@@ -85,9 +85,9 @@
   },
 
   "compensation": {
-    "expected_salary_usd":       125000,
-    "minimum_acceptable_usd":    86000,
-    "salary_range_answer_narrow": "$110,000 – $140,000",
+    "expected_salary_usd":       145000,
+    "minimum_acceptable_usd":    99000,
+    "salary_range_answer_narrow": "$120,000 – $140,000",
     "salary_range_answer_wide":   "$100,000 – $160,000",
     "single_number_answer_usd":  125000,
     "currency":                  "USD",
@@ -98,7 +98,7 @@
 
   "experience": {
     "years_total_professional":  2,
-    "years_relevant_ai_ml":      2,
+    "years_relevant_ai_ml":      3,
     "current_employer":          "alfred_",
     "current_title":             "Founding LLM Engineer",
     "current_since_month_year":  "April 2026",
@@ -133,7 +133,7 @@
       "title":     "Research Software Engineer",
       "location":  "Chicago, IL",
       "start":     "2024-02",
-      "end":       "2026-05",
+      "end":       "2026-02",
       "employment_type": "Graduate Research",
       "summary":   "Built Python RESTful APIs with PostgreSQL handling 1M+ records; JWT auth middleware; deployed a quantized audio ML inference service at 150ms p95 (INT8, TorchScript, Docker CI/CD). Contributing author on the TeamMedAgents research line — multi-agent medical reasoning grounded in the Salas Big Five teamwork model.",
       "stack":     ["Python", "FastAPI", "PostgreSQL", "TorchScript", "Docker"]
@@ -146,7 +146,7 @@
     "field_of_study": "Computer Science",
     "graduation_month": "May",
     "graduation_year":  "2025",
-    "gpa":            "TODO — 3.x/4.0 or leave 'Prefer not to disclose'",
+    "gpa":            "Prefer not to disclose",
     "gpa_scale":      "4.0",
     "_gpa_options":   ["3.8", "3.85", "3.9", "Prefer not to disclose"],
     "coursework":     "Advanced ML, Applied AI, Advanced NLP, Computer Vision, VR, Game Design, Object-Oriented Programming",
@@ -233,14 +233,14 @@
 
   "diversity_eeo": {
     "_note": "Every field here is legally optional. All defaults are 'Prefer not to say' unless you want to disclose.",
-    "gender":            "Prefer not to say",
+    "gender":            "Male",
     "_gender_options":   ["Male", "Female", "Non-binary", "Prefer not to say"],
-    "race_ethnicity":    "Prefer not to say",
+    "race_ethnicity":    "Asian",
     "_race_ethnicity_options": ["Asian", "White", "Black or African American", "Hispanic or Latino", "Two or more races", "Prefer not to say"],
-    "hispanic_latino":   "Prefer not to say",
+    "hispanic_latino":   "No",
     "veteran_status":    "I am not a veteran",
     "_veteran_options":  ["I am not a veteran", "I am a veteran", "Prefer not to say"],
-    "disability_status": "Prefer not to say",
+    "disability_status": "No, I do not have a disability",
     "_disability_options": ["Yes, I have a disability", "No, I do not have a disability", "Prefer not to say"],
     "lgbtq":             "Prefer not to say"
   },
