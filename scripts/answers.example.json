@@ -1,19 +1,34 @@
 {
   "_meta": {
-    "purpose": "Answers Pranav's default responses to standard job-application form fields. Copy this file to ~/.job_search/answers.json and fill any TODO fields. Never commit the real file — it lives outside the repo.",
+    "purpose": "Pranav's default responses to standard job-application form fields plus canonical bio/experience/publications content /apply can lift verbatim into free-text prompts. Copy to ~/.job_search/answers.json and fill any TODO fields.",
+    "never_commit_real_file": "The real filled file (~/.job_search/answers.json) contains address/GPA/EEO and is gitignored. Only this .example.json ships in the repo.",
     "conventions": [
       "Each field has a picked default in the string value.",
       "Alternative options are listed alongside as _<field>_options arrays.",
       "TODO markers mean the user must supply it before /apply can run cleanly.",
-      "Fields under 'sensitive' MUST NEVER be auto-filled by /apply — always leave blank."
+      "Fields under 'sensitive' MUST NEVER be auto-filled by /apply — always leave blank.",
+      "The 'references' block points at the canonical source docs. When a free-text question needs a fact /apply doesn't have on hand here, it reads from these instead of inventing."
     ]
+  },
+
+  "references": {
+    "_note": "Read-only canonical sources. /apply and any answer-generating step should ground claims in these — never invent.",
+    "master_reference_md":  "E:/_Resume-Curator/PRANAV_MASTER_REFERENCE.md",
+    "resume_tex":           "E:/_Resume-Curator/resume.tex",
+    "resume_pdf":           "profile/RESUME Pranav_Mishra.pdf",
+    "portfolio_pdf":        "profile/PRANAV_PORTFOLIO.pdf",
+    "alfred_role_md":       "profile/ALFRED_ROLE.md",
+    "state_json":           "~/.job_search/state.json",
+    "wheelprice_deep_dive": "profile/WHEELPRICE.md",
+    "snakeai_deep_dive":    "profile/SNAKEAI.md"
   },
 
   "identity": {
     "first_name": "Pranav",
     "last_name": "Mishra",
     "middle_initial": "P",
-    "legal_full_name": "Pranav P. Mishra",
+    "middle_name": "Pushkar",
+    "legal_full_name": "Pranav Pushkar Mishra",
     "preferred_name": "Pranav",
     "pronouns": "he/him",
     "_pronouns_options": ["he/him", "she/her", "they/them", "Prefer not to say"]
@@ -33,117 +48,286 @@
     "country": "United States",
     "country_code": "US",
     "zip_code": "TODO — your NYC zip",
-    "street_address_1": "TODO — sometimes required by Workday/iCIMS; leave blank otherwise",
+    "street_address_1": "TODO — Workday/iCIMS often demand it; leave blank otherwise",
     "street_address_2": "",
-    "current_timezone": "America/New_York"
+    "current_timezone": "America/New_York",
+    "resides_in": "New York City"
   },
 
   "links": {
-    "linkedin": "https://linkedin.com/in/pranavgamedev",
-    "github": "https://github.com/PranavMishra17",
-    "portfolio": "https://portfolio-pranav-mishra-paranoid.vercel.app",
+    "linkedin":         "https://linkedin.com/in/pranavgamedev",
+    "github":           "https://github.com/PranavMishra17",
+    "portfolio":        "https://portfolio-pranav-mishra-paranoid.vercel.app",
     "personal_website": "",
-    "twitter_x": "",
-    "google_scholar": ""
+    "twitter_x":        "",
+    "google_scholar":   "",
+    "arxiv_metarag":         "https://doi.org/10.48550/arXiv.2512.05411",
+    "arxiv_teammedagents":   "https://arxiv.org/abs/2508.08115",
+    "github_metarag":        "https://github.com/PranavMishra17/Metadata-Enrichment-with-LLMs-for-RAGs-Internal-Knowledge-Retrieval",
+    "github_teammedagents":  "https://github.com/PranavMishra17/Big5-Agents",
+    "github_slmmedagents":   "https://github.com/PranavMishra17/SLM-TeamMedAgents",
+    "github_mockflow":       "https://github.com/PranavMishra17/MockFlow-AI",
+    "mockflow_live":         "https://mockflow-ai.onrender.com",
+    "github_snakeai":        "https://github.com/PranavMishra17/SnakeAI-MLOps",
+    "github_soulengine":     "https://github.com/PranavMishra17/SoulEngine"
   },
 
   "work_authorization": {
-    "authorized_to_work_us_now": "Yes",
-    "requires_sponsorship_now": "No",
-    "requires_sponsorship_in_future": "Yes",
+    "authorized_to_work_us_now":        "Yes",
+    "requires_sponsorship_now":         "No",
+    "requires_sponsorship_in_future":   "Yes",
     "_sponsorship_now_or_future_answer": "Yes — I will require H-1B sponsorship in the future. My F-1 STEM OPT is valid through July 2028.",
-    "visa_status": "F-1 STEM OPT",
-    "visa_expiration_date": "2028-07-01",
-    "citizen_of": "India",
-    "us_permanent_resident": "No",
-    "requires_visa_transfer": "No"
+    "visa_status":              "F-1 STEM OPT",
+    "visa_expiration_date":     "2028-07-01",
+    "citizen_of":               "India",
+    "us_permanent_resident":    "No",
+    "requires_visa_transfer":   "No"
   },
 
   "compensation": {
-    "expected_salary_usd": 125000,
-    "minimum_acceptable_usd": 86000,
+    "expected_salary_usd":       125000,
+    "minimum_acceptable_usd":    86000,
     "salary_range_answer_narrow": "$110,000 – $140,000",
-    "salary_range_answer_wide": "$100,000 – $160,000",
-    "single_number_answer_usd": 125000,
-    "currency": "USD",
-    "open_to_equity": "Yes",
-    "notice_period_weeks": 2,
-    "earliest_start_answer": "Two weeks after offer acceptance"
+    "salary_range_answer_wide":   "$100,000 – $160,000",
+    "single_number_answer_usd":  125000,
+    "currency":                  "USD",
+    "open_to_equity":            "Yes",
+    "notice_period_weeks":       2,
+    "earliest_start_answer":     "Two weeks after offer acceptance"
   },
 
   "experience": {
-    "years_total_professional": 2,
-    "years_relevant_ai_ml": 2,
-    "current_employer": "alfred_",
-    "current_title": "Founding LLM Engineer",
-    "current_since_month_year": "April 2026",
-    "current_still_employed": "Yes"
+    "years_total_professional":  2,
+    "years_relevant_ai_ml":      2,
+    "current_employer":          "alfred_",
+    "current_title":             "Founding LLM Engineer",
+    "current_since_month_year":  "April 2026",
+    "current_still_employed":    "Yes",
+    "reason_for_leaving_current": "Not actively leaving; open to conversations where the scope and technical bar make the move worth it.",
+    "reason_for_leaving_prior":   "Moved to alfred_ for founding-team scope and to work on production multi-agent systems end-to-end."
   },
+
+  "work_history": [
+    {
+      "employer":  "alfred_",
+      "title":     "Founding LLM Engineer",
+      "location":  "New York City, NY",
+      "start":     "2026-04",
+      "end":       "present",
+      "employment_type": "Full-time",
+      "summary":   "Founding-team engineer on a Techstars-backed consumer AI assistant, 5,000+ paying subscribers. Own the reliability layer of a multi-agent SMS/web/voice system: risk-scored gating (five-verdict decision layer with deterministic scoring), a from-scratch eval harness, an automated production-failure scanner, and re-architected working memory so LLM fabrication is structurally impossible (strict-ID pipeline). Built and scaled the email-rules engine — replaced per-message LLM calls with a deterministic three-stage matcher, cut per-user LLM cost ~30%. Cut email-to-SMS notification latency ~90s → ~3s (~30×) via polling → event-triggered delivery. Postgres/Supabase at production scale with RLS hardening.",
+      "stack":     ["TypeScript", "Deno", "Node.js", "MCP", "Postgres (Supabase)", "Gmail/Graph/IMAP", "Cartesia TTS", "Vercel"]
+    },
+    {
+      "employer":  "WheelPrice",
+      "title":     "AI Engineer",
+      "location":  "Charlotte, NC",
+      "start":     "2025-07",
+      "end":       "2026-03",
+      "employment_type": "Full-time",
+      "summary":   "Owned the end-to-end React / Node.js / MongoDB CMS powering 10–20K daily users; Redis caching, SSR, dynamic SEO pipeline. Cut API p95 latency from 1.5s to 300ms via query-plan tuning and connection pooling. Shipped an internal XGBoost churn-prediction dashboard on event-driven behavior tracking.",
+      "stack":     ["React", "Node.js", "MongoDB", "Redis", "XGBoost"]
+    },
+    {
+      "employer":  "UIC — VARE Lab",
+      "title":     "Research Software Engineer",
+      "location":  "Chicago, IL",
+      "start":     "2024-02",
+      "end":       "2026-05",
+      "employment_type": "Graduate Research",
+      "summary":   "Built Python RESTful APIs with PostgreSQL handling 1M+ records; JWT auth middleware; deployed a quantized audio ML inference service at 150ms p95 (INT8, TorchScript, Docker CI/CD). Contributing author on the TeamMedAgents research line — multi-agent medical reasoning grounded in the Salas Big Five teamwork model.",
+      "stack":     ["Python", "FastAPI", "PostgreSQL", "TorchScript", "Docker"]
+    }
+  ],
 
   "education": {
     "highest_degree": "Master's Degree",
-    "school": "University of Illinois at Chicago",
+    "school":         "University of Illinois at Chicago",
     "field_of_study": "Computer Science",
     "graduation_month": "May",
-    "graduation_year": "2025",
-    "gpa": "TODO — 3.x/4.0 or leave 'Prefer not to disclose'",
-    "gpa_scale": "4.0",
-    "_gpa_options": ["3.8", "3.85", "3.9", "Prefer not to disclose"],
-    "prior_degree": "Bachelor's Degree",
-    "prior_school": "Dayananda Sagar College of Engineering",
-    "prior_field": "Computer Science and Engineering",
-    "prior_graduation": "June 2023"
+    "graduation_year":  "2025",
+    "gpa":            "TODO — 3.x/4.0 or leave 'Prefer not to disclose'",
+    "gpa_scale":      "4.0",
+    "_gpa_options":   ["3.8", "3.85", "3.9", "Prefer not to disclose"],
+    "coursework":     "Advanced ML, Applied AI, Advanced NLP, Computer Vision, VR, Game Design, Object-Oriented Programming",
+    "prior_degree":         "Bachelor's Degree",
+    "prior_school":         "Dayananda Sagar College of Engineering",
+    "prior_field":          "Computer Science and Engineering",
+    "prior_graduation":     "June 2023",
+    "prior_location":       "Bangalore, India",
+    "prior_coursework":     "AI & ML, Software Engineering, Computer Networks, Operating Systems, DSA, DBMS"
+  },
+
+  "publications": [
+    {
+      "title":  "MetaRAG: A Systematic Framework for Enterprise Knowledge Retrieval",
+      "venue":  "IEEE Conference on Artificial Intelligence (CAI) 2026",
+      "status": "Accepted",
+      "role":   "First author",
+      "one_line": "Metadata-enrichment framework for RAG that beats content-only retrieval by injecting LLM-generated metadata into chunk representations. 82.5% precision, 0.925 Hit@10, 25% hallucination reduction. Deployed on AWS SageMaker, p99 <300ms, 10K queries/day.",
+      "link":   "https://doi.org/10.48550/arXiv.2512.05411"
+    },
+    {
+      "title":  "TeamMedAgents: Enhancing Medical Decision-Making of LLMs Through Teamwork",
+      "venue":  "PAKDD 2026",
+      "status": "Under review",
+      "role":   "First author",
+      "one_line": "Multi-agent LLM medical reasoning framework grounded in Salas et al.'s Big Five teamwork model; six operationalized teamwork components as toggleable mechanisms; consistent improvements on 7 of 8 medical benchmarks.",
+      "link":   "https://arxiv.org/abs/2508.08115"
+    },
+    {
+      "title":  "SLM-TeamMedAgents: Scaling Medical Decision Making with SLMs",
+      "venue":  "ICML 2026 submission",
+      "status": "Submitted",
+      "role":   "First author",
+      "one_line": "Collaborative Small Language Models (500M–27B) matching frontier 100B+ models at orders-of-magnitude lower cost. Built on Google ADK with Gemma / MedGemma. 77.63% across 8 benchmarks, 3.1× inference speedup vs frontier LLMs.",
+      "link":   "https://github.com/PranavMishra17/SLM-TeamMedAgents"
+    }
+  ],
+
+  "awards_and_recognition": [
+    "MIT XR Hackathon 2024 — Winner (SnAIder-Cut, Meta Quest 3 + Unity + Hugging Face)",
+    "HINT 5.0 — First Place (Virtual Van Gogh, Web3 NFT museum)",
+    "INFORMS Analytics+ — Invited Speaker (presented MetaRAG to 700+ professionals)",
+    "IEEE CAI 2026 — Accepted paper (MetaRAG, first author)",
+    "Techstars-backed startup — founding-team member at alfred_"
+  ],
+
+  "skills_categorized": {
+    "_note": "Structured skill list for forms that ask for individual entries. Pulled from resume.tex and master reference §9.",
+    "languages":       ["Python", "TypeScript", "JavaScript", "C++", "C#", "Java", "Rust"],
+    "ai_ml":           ["LangChain", "MCP (Model Context Protocol)", "PyTorch", "TensorFlow", "LibTorch (C++)", "Google ADK", "Hugging Face", "Coqui TTS", "XTTS-v2"],
+    "backend":         ["Node.js", "Deno", "FastAPI", "Flask", "Express", "Hono", "ASP.NET Core"],
+    "frontend":        ["React", "Next.js 14", "Tailwind CSS"],
+    "databases":       ["PostgreSQL", "MongoDB", "Redis", "Supabase", "Pinecone", "Azure Cosmos DB"],
+    "cloud_devops":    ["AWS (SageMaker, MLflow)", "Azure (Speech, AI, Cosmos DB)", "Docker", "Git", "CI/CD", "Vercel", "Railway", "Render", "Kubernetes"],
+    "voice_audio":     ["Deepgram", "OpenAI TTS", "Cartesia", "Silero VAD", "LiveKit Agents SDK", "WebRTC", "INT8 quantization"],
+    "specializations": [
+      "Agentic AI systems",
+      "Multi-agent LLM orchestration",
+      "LLM evaluation & reliability",
+      "Anti-hallucination architecture",
+      "RAG & retrieval",
+      "Observability & tracing",
+      "LLM cost engineering",
+      "Voice AI pipelines (sub-400ms streaming)",
+      "Production LLM infrastructure",
+      "Full-stack product engineering",
+      "C++ ML inference (LibTorch, RAII, GPU memory)"
+    ]
   },
 
   "job_preferences": {
-    "employment_type": "Full-time",
-    "_employment_type_options": ["Full-time", "Contract", "Internship"],
-    "remote_ok": true,
-    "hybrid_ok": true,
-    "onsite_ok": true,
-    "willing_to_relocate": "Yes",
-    "willing_to_travel_pct": "Up to 25%",
-    "how_heard_about_role": "Company website",
-    "_how_heard_options": ["Company website", "LinkedIn", "Google search", "Referred by employee", "Job board", "GitHub / open source"],
-    "referred_by_name": "",
-    "referred_by_email": ""
+    "employment_type":           "Full-time",
+    "_employment_type_options":  ["Full-time", "Contract", "Internship"],
+    "remote_ok":                 true,
+    "hybrid_ok":                 true,
+    "onsite_ok":                 true,
+    "willing_to_relocate":       "Yes",
+    "willing_to_travel_pct":     "Up to 25%",
+    "how_heard_about_role":      "Company website",
+    "_how_heard_options":        ["Company website", "LinkedIn", "Google search", "Referred by employee", "Job board", "GitHub / open source"],
+    "referred_by_name":          "",
+    "referred_by_email":         ""
   },
 
   "diversity_eeo": {
     "_note": "Every field here is legally optional. All defaults are 'Prefer not to say' unless you want to disclose.",
-    "gender": "Prefer not to say",
-    "_gender_options": ["Male", "Female", "Non-binary", "Prefer not to say"],
-    "race_ethnicity": "Prefer not to say",
+    "gender":            "Prefer not to say",
+    "_gender_options":   ["Male", "Female", "Non-binary", "Prefer not to say"],
+    "race_ethnicity":    "Prefer not to say",
     "_race_ethnicity_options": ["Asian", "White", "Black or African American", "Hispanic or Latino", "Two or more races", "Prefer not to say"],
-    "hispanic_latino": "Prefer not to say",
-    "veteran_status": "I am not a veteran",
-    "_veteran_options": ["I am not a veteran", "I am a veteran", "Prefer not to say"],
+    "hispanic_latino":   "Prefer not to say",
+    "veteran_status":    "I am not a veteran",
+    "_veteran_options":  ["I am not a veteran", "I am a veteran", "Prefer not to say"],
     "disability_status": "Prefer not to say",
     "_disability_options": ["Yes, I have a disability", "No, I do not have a disability", "Prefer not to say"],
-    "lgbtq": "Prefer not to say"
+    "lgbtq":             "Prefer not to say"
   },
 
   "documents": {
-    "resume_pdf_path": "profile/RESUME Pranav_Mishra.pdf",
+    "resume_pdf_path":       "profile/RESUME Pranav_Mishra.pdf",
     "_resume_pdf_alt_paths": ["profile/PRANAV_PORTFOLIO.pdf"],
-    "cover_letter_template_path": "scripts/covers/default.md",
-    "transcript_path": ""
+    "transcript_path":       "",
+    "cover_letters": {
+      "ai":         "scripts/covers/Cover_Letter_PPM_AI.pdf",
+      "ml":         "scripts/covers/Cover_Letter_PPM_ML.pdf",
+      "fullstack":  "scripts/covers/Cover_Letter_PPM_FullStack.pdf"
+    },
+    "default_cover": "scripts/covers/Cover_Letter_PPM_AI.pdf",
+    "cover_letter_selection": {
+      "_rules_order": "First matching rule wins; else use default_cover.",
+      "rules": [
+        {
+          "family": "fullstack",
+          "title_contains_any": ["full stack", "full-stack", "fullstack", "backend engineer", "forward deployed", "fde", "software engineer"],
+          "title_excludes_any": ["ai", "ml", "machine learning", "llm"]
+        },
+        {
+          "family": "ml",
+          "title_or_jd_contains_any": ["mlops", "ml platform", "ml infrastructure", "deep learning engineer", "applied ml"],
+          "title_excludes_any":       ["ai engineer", "llm", "agentic"]
+        }
+      ],
+      "default_family": "ai"
+    }
   },
 
   "typical_short_answers": {
-    "_note": "Fallback stock answers for questions where the JD has no specific hook. The /apply command should read the JD first and write something more tailored using the voice rules — these are used only when the question is completely generic (e.g. 'Anything else?').",
-    "greatest_strength": "I own vertical slices end to end — from design through production and iteration on real user data. I get comfortable with the whole stack rather than one layer.",
-    "greatest_weakness": "I over-invest in eval and observability early. It slows the first few days of a project but pays off later, and I've gotten better at picking when it's worth it.",
+    "_note": "Fallback stock answers for questions where the JD gives no specific hook. /apply should read the JD first and write something more tailored using the voice rules (job_search_apply_voice.md). These are used only when the question is completely generic.",
+
+    "elevator_pitch_short": "I'm a founding LLM engineer at alfred_, a Techstars-backed AI assistant with 5,000+ paying users. I own the multi-agent reliability layer — a five-verdict decision system with deterministic risk scoring, an eval harness, and a working-memory pipeline I re-architected so LLM fabrication is structurally impossible. Prior to alfred_ I shipped a customer-facing CMS at WheelPrice (10–20K DAU) and I have three first-author papers in multi-agent LLM systems and RAG, including one accepted at IEEE CAI 2026.",
+
+    "elevator_pitch_long": "I'm the founding LLM engineer at alfred_, a Techstars-backed consumer AI assistant that manages a user's email, calendar, and daily obligations over SMS, web, and voice — 5,000+ paying subscribers today. My work spans three layers most companies split across teams: agent infrastructure (multi-agent orchestration, tool-calling, a five-verdict execution decision layer with deterministic risk scoring); product core (the email-rules engine and a per-user working-memory system I re-architected into a strict-ID pipeline so LLM fabrication is structurally impossible, not just reduced); and production reliability (a deterministic eval harness, an automated production-failure scanner, LLM cost engineering that cut per-user cost ~30% on the rules path). Before alfred_ I built the React/Node/Mongo CMS at WheelPrice serving 10–20K DAU and cut API latency 1.5s → 300ms. I hold three first-author publications in multi-agent LLM systems and RAG including one accepted at IEEE CAI 2026, and I was a graduate assistant at UIC's VARE Lab.",
+
+    "why_engineering_ai": "I like the intersection where a system has to be trustworthy, cheap, and fast at the same time. Most agentic AI work today has to make trade-offs across those three, and figuring out which axis matters for a given feature is more interesting than any single one on its own.",
+
+    "greatest_strength":  "I own vertical slices end to end — design through production and iteration on live user data. That lets me pick the right layer to fix a problem at, rather than defaulting to whichever layer I'm most comfortable with.",
+
+    "greatest_weakness":  "I over-invest in eval and observability early on a project. It slows the first couple of days, and I've had to learn when the payoff justifies it and when a scrappier approach is fine.",
+
+    "biggest_impact_story": "The alfred_ email-to-SMS notification pipeline was arriving ~90 seconds after a user's email — a polling timer, not compute. I moved delivery to an instant event trigger the moment a notification is queued, with the old cron demoted to a backstop. Latency went to ~3 seconds, about 30×. Then I extended the same fix to the security/OTP path, which had been 189s at p90 — that went instant too. It's a small architectural change but it moved a metric a lot of users felt every day.",
+
+    "hardest_technical_problem": "The working-memory pipeline at alfred_. An LLM summarizing an inbox will confidently invent threads, invert who owes the next move, or show a closed loop as still open. I re-architected the pipeline into a strict-ID design where the LLM only selects from a menu of real candidates behind opaque handles and writes prose — it never emits or echoes an identifier or ownership field. All identity, ownership, and closed-state data is re-attached by code. That makes a whole class of hallucination structurally impossible rather than probabilistically reduced, and it's enforced by tests.",
+
+    "why_leaving_current_role": "Not actively leaving. I'm at a Techstars-backed startup with a live paying user base and I like my scope. I'm open to conversations where the technical bar and scope of impact make the move worth it.",
+
+    "five_year_goal": "Keep building at the intersection of agentic systems and production reliability. Longer term, own the eval / observability / trust stack for a product that a lot of people use — whether that's my own or someone else's.",
+
     "anything_else": ""
+  },
+
+  "project_stories": {
+    "_note": "Ready-to-lift answers for 'tell us about a project' style questions. Pick the one whose stack/domain matches the role.",
+
+    "alfred_decision_layer": {
+      "one_line": "A five-verdict execution decision layer for a live multi-agent AI assistant.",
+      "story": "The alfred_ agent takes actions on a user's email, calendar, and SMS. Each candidate action needs to be gated — some are silent, some need confirmation, some need to be refused entirely. I designed a five-verdict system (SILENT / NOTIFY / CONFIRM / CLARIFY / REFUSE) using deterministic risk scoring rather than an LLM-as-judge, so the same input always produces the same verdict and the decision is auditable. It ships with a pending-obligations queue and a bounded undo window for recoverable side effects. Now runs across the production agent for 5,000+ users."
+    },
+
+    "metarag": {
+      "one_line": "A metadata-enrichment framework for RAG accepted at IEEE CAI 2026.",
+      "story": "Vector search over document chunks tends to miss on enterprise knowledge because the chunk itself doesn't carry enough context. I used an LLM to generate structured metadata per chunk (type, source, key entities, likely question types) and injected it into the embedding representation. Combined with cross-encoder reranking and TF-IDF weighted embeddings, the system hit 82.5% precision and 0.925 Hit@10 versus a 73.3% baseline, and cut hallucinations 25% via an automated evaluation framework. Deployed on AWS SageMaker with MLflow, 10K queries/day in a production code-translation use case, p99 latency under 300ms."
+    },
+
+    "snakeai_mlops": {
+      "one_line": "A C++/LibTorch reinforcement learning system with a real Python-to-C++ inference bridge.",
+      "story": "I wanted to force myself into a real C++ systems problem. The interesting work was the integration, not the ML: getting trained PyTorch weights running inside a C++ game loop with a proper artifact contract, CI/CD, and a diagnostic layer that surfaces failures early. I built four RL algorithms (Q-Learning, DQN, PPO, Actor-Critic), a TorchScript conversion gate with shape validation, and a TORCH_AVAILABLE compile flag for graceful degradation when LibTorch is absent. Also hit a LibTorch memory-corruption bug where inference outputs degraded gradually after a few minutes — fixed by moving to a RAII pattern for the input tensor, validated with a 50,000-iteration soak test."
+    },
+
+    "wheelprice_cms": {
+      "one_line": "A React/Node/Mongo CMS serving 10–20K daily users with a 1.5s → 300ms latency win.",
+      "story": "WheelPrice needed a content layer to capture organic search traffic. I built the CMS as an independent Node.js/React service under the same domain — SSR, dynamic SEO pipeline, Redis caching with tag-based invalidation. First version had no caching; when a social post went viral the SSR-against-Mongo path tanked. Added the Redis layer and connection pooling — API p95 went from 1.5s to 300ms, and daily views grew to 10–20K over the following months as long-tail queries started resolving."
+    }
   },
 
   "sensitive": {
     "_note": "NEVER auto-fill any of these. If a form asks, /apply should skip the field and log it for manual review.",
-    "ssn": "NEVER_AUTOFILL",
-    "date_of_birth": "NEVER_AUTOFILL",
-    "government_id": "NEVER_AUTOFILL",
-    "bank_account": "NEVER_AUTOFILL",
-    "drivers_license": "NEVER_AUTOFILL",
-    "passport_number": "NEVER_AUTOFILL"
+    "ssn":              "NEVER_AUTOFILL",
+    "date_of_birth":    "NEVER_AUTOFILL",
+    "government_id":    "NEVER_AUTOFILL",
+    "bank_account":     "NEVER_AUTOFILL",
+    "drivers_license":  "NEVER_AUTOFILL",
+    "passport_number":  "NEVER_AUTOFILL"
   }
 }

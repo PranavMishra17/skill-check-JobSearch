@@ -1,34 +1,28 @@
-# Cover-letter templates
+# Cover-letter files
 
-Drop your single generic cover-letter template here as `default.md`. `/apply` will:
+Three prebuilt PDF covers ship here. `/apply` picks one based on the role title and JD keywords, then attaches the PDF directly to the ATS's cover-letter upload field.
 
-1. Load `default.md`
-2. Do minimal template substitution — `{{company}}`, `{{role_title}}` — leave everything else as-is.
-3. Attach as `Cover Letter.pdf` (converted at run time) or paste into the cover-letter textarea, depending on the ATS.
+| File | Default for |
+|---|---|
+| `Cover_Letter_PPM_AI.pdf` | AI / LLM / Agentic / Applied AI / Research / Founding Engineer roles — **the default** |
+| `Cover_Letter_PPM_ML.pdf` | Pure ML / MLOps / ML Platform / Deep Learning Engineer roles |
+| `Cover_Letter_PPM_FullStack.pdf` | Full-Stack / Backend / Forward Deployed / SWE (non-AI-first) roles |
 
-**Do not write role-family variants.** The user specified one template only. `/apply` handles anything JD-specific through the "why this role" and "why us" answer generation, following the voice rules in `job_search_apply_voice.md` in the persistent memory.
+## Selection rule (used by `/apply`)
 
-## Template variables
+Ordered — first matching rule wins:
 
-Only these are substituted:
+1. Title contains any of: `full stack`, `full-stack`, `fullstack`, `backend`, `forward deployed`, `fde`, `swe`, `software engineer` (without `ai`/`ml` qualifier) → **FullStack**
+2. Title or first paragraph of the JD contains: `mlops`, `ml platform`, `ml infrastructure`, `deep learning engineer`, `data scientist`, `applied ml` (no `ai`/`llm`) → **ML**
+3. Otherwise → **AI** (default; covers all agentic/LLM/founding/research/applied-AI roles)
 
-- `{{company}}` — the company name
-- `{{role_title}}` — the exact job title from the listing
+Config for these rules lives in `~/.job_search/answers.json` under `documents.cover_letter_selection`. Edit there — this README is documentation only.
 
-Everything else is left literal. Do not add other placeholders.
+## Adding or replacing a template
 
-## Example structure (yours can differ)
+Drop a new PDF here with a clear filename. Add it to `answers.json → documents.cover_letters` and either (a) extend the selection rules or (b) point `documents.default_cover` at it. The PDFs themselves are gitignored (per `.gitignore`) — nothing personal ever hits the public repo.
 
-```markdown
-Hi {{company}} team,
+## What `/apply` does NOT do
 
-I'm applying for the {{role_title}} role.
-
-Currently I'm the founding LLM engineer at alfred_ (Techstars-backed, 5,000+ active users), where I own the multi-agent decision layer and the working-memory pipeline. Prior to that I shipped a customer-facing CMS at WheelPrice (10-20K DAU). I have three first-author papers in multi-agent LLM systems and RAG, including one accepted at IEEE CAI 2026.
-
-I'd like to bring that work to {{company}}.
-
-— Pranav
-```
-
-Keep it short. Recruiters skim.
+- Does **not** rewrite the cover letter per role. If the ATS also has a free-text "why this role" question, that's handled separately by the voice memory (`job_search_apply_voice.md`) — plain, short, non-glaze, JD-tailored 2-4 sentences.
+- Does **not** convert between formats. PDF in, PDF attached. If an ATS's cover-letter field is a textarea (rare), that field gets left blank; the "why this role" answer covers it.
