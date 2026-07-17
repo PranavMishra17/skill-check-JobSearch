@@ -118,6 +118,7 @@
   .person .name a:hover{color:var(--link);text-decoration:none}
   .person .title{font-size:12.5px;color:var(--muted-strong)}
   .person .company{font-size:13px;color:var(--fg);font-weight:500}
+  .person .email-line{font-size:12px;margin-top:3px;word-break:break-word;line-height:1.55}
   .meta{font-size:12px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:6px}
   .meta .sep{opacity:.4;margin:0 2px}
   .badge{display:inline-block;padding:1px 6px;border-radius:3px;background:#1d2129;font-size:11px;color:var(--muted)}
@@ -635,6 +636,11 @@
               <h3 class="name"><a href="${escapeHtml(p.linkedin_url)}" target="_blank" rel="noopener" data-open-link>${escapeHtml(p.name || '(unknown poster)')}</a></h3>
               <div class="title">${escapeHtml(p.title || '')}</div>
               ${p.company ? `<div class="company">${escapeHtml(p.company)}</div>` : ''}
+              ${p.email
+                ? `<div class="email-line"><a href="mailto:${escapeHtml(p.email)}" style="color:#2f6b3a;font-weight:600">${escapeHtml(p.email)}</a> <span style="font-size:10px;background:#234032;color:#bfe6c8;padding:1px 6px;border-radius:8px;letter-spacing:.04em">✓ VERIFIED</span></div>`
+                : (p.email_candidates && p.email_candidates.length
+                  ? `<div class="email-line" style="opacity:.9"><span style="color:var(--muted-strong)">try:</span> ${p.email_candidates.slice(0,4).map(e => `<a href="mailto:${escapeHtml(e)}" style="color:var(--link)">${escapeHtml(e)}</a>`).join(', ')} <span style="font-size:10px;background:#3a2f18;color:#d9c48f;padding:1px 6px;border-radius:8px">${escapeHtml(p.email_status || 'unconfirmed')}</span></div>`
+                  : '')}
               <div class="meta">${metaHtml}</div>
               ${p.context ? `<div class="desc">${escapeHtml(p.context)}</div>` : ''}
               <div class="actions">

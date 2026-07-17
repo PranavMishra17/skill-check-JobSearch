@@ -10,7 +10,8 @@ Sources are additive — failure in one source doesn't block the others.
 Usage:
     python crawl_all.py --window-days 3 --output ~/.job_search/raw_jobs/2026-06-08_3d.json
 """
-import argparse, json, math, os, re, sys, urllib.request, urllib.error, hashlib, datetime
+import argparse, difflib, json, math, os, re, sys, urllib.request, urllib.error, hashlib, datetime
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 try:
@@ -153,7 +154,15 @@ def jobspy_row_to_item(row):
     site = _str(row.get("site")) or ""
     company = _str(row.get("company")) or ""
     title = _str(row.get("title")) or ""
-    url = _str(row.get("job_url")) or _str(row.get("job_url_direct")) or ""
+    # Prefer the direct company/ATS URL (job_url_direct) over the aggregator link
+    # (job_url = linkedin.com/indeed.com page we can't auto-apply on). Keep the
+    # aggregator URL as a fallback reference for the UI.
+    url_direct = _str(row.get("job_url_direct")) or ""
+    url_board = _str(row.get("job_url")) or ""
+    if url_direct.lower().startswith("http"):
+        url, url_aggregator = url_direct, (url_board or None)
+    else:
+        url, url_aggregator = url_board, None
     description = _str(row.get("description")) or ""
 
     city = _str(row.get("city"))
@@ -189,6 +198,7 @@ def jobspy_row_to_item(row):
         s_min=s_min, s_max=s_max, s_unit=s_unit, currency=currency,
         date_posted=dp,
         company_industry=_str(row.get("company_industry")),
+        url_aggregator=url_aggregator,
     )
 
 
@@ -441,7 +451,7 @@ def crawl_arbeitnow(window_days, verbose):
 
 def _build_item(*, company, title, url, description, locations, country_full,
                 is_remote, source, emp_type, s_min, s_max, s_unit, currency,
-                date_posted, company_industry=None):
+                date_posted, company_industry=None, url_aggregator=None):
     return {
         "id": stable_id(company, title, url),
         "date_posted": date_posted,
@@ -451,6 +461,7 @@ def _build_item(*, company, title, url, description, locations, country_full,
         "countries_derived": [country_full] if country_full else ["United States"],
         "remote_derived": bool(is_remote),
         "url": url,
+        "url_aggregator": url_aggregator,
         "source": source,
         "ai_employment_type": emp_type,
         "ai_experience_level": infer_experience_level(title, description),
@@ -474,6 +485,118 @@ def _build_item(*, company, title, url, description, locations, country_full,
     }
 
 
+# ───────────────────────── ATS URL resolver ─────────────────────────
+# LinkedIn (and sometimes Indeed) hide the external apply link behind login,
+# so job_url_direct comes back empty. Fallback: the five supported ATS all
+# expose free public JSON job-board APIs. Given the company name, probe each
+# board, fuzzy-match the title, and recover the real posting URL.
+
+ATS_PUBLIC_APIS = [
+    # (name, url template, extractor(parsed_json) -> [(title, job_url), ...])
+    ("greenhouse", "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs",
+     lambda d: [(j.get("title", ""), j.get("absolute_url", "")) for j in d.get("jobs", [])]),
+    ("lever", "https://api.lever.co/v0/postings/{slug}?mode=json",
+     lambda d: [(j.get("text", ""), j.get("hostedUrl", "")) for j in d] if isinstance(d, list) else []),
+    ("ashby", "https://api.ashbyhq.com/posting-api/job-board/{slug}",
+     lambda d: [(j.get("title", ""), j.get("jobUrl", "")) for j in d.get("jobs", [])]),
+    ("workable", "https://apply.workable.com/api/v1/widget/accounts/{slug}",
+     lambda d: [(j.get("title", ""), j.get("url", "")) for j in d.get("jobs", [])]),
+    ("smartrecruiters", "https://api.smartrecruiters.com/v1/companies/{slug}/postings",
+     lambda d: [(j.get("name", ""), f"https://jobs.smartrecruiters.com/{j.get('company', {}).get('identifier', '')}/{j.get('id', '')}")
+                for j in d.get("content", [])]),
+]
+
+COMPANY_SUFFIXES = {"inc", "llc", "corp", "co", "ltd", "the", "company", "group", "labs", "technologies", "tech"}
+
+
+def company_slug_candidates(name):
+    base = re.sub(r"[^a-z0-9 ]", "", (name or "").lower()).strip()
+    if not base:
+        return []
+    words = base.split()
+    trimmed = [w for w in words if w not in COMPANY_SUFFIXES] or words
+    cands = []
+    for form in ("".join(trimmed), "-".join(trimmed), "".join(words), "-".join(words)):
+        if form and form not in cands:
+            cands.append(form)
+    return cands[:3]
+
+
+def _norm_match_title(t):
+    return re.sub(r"[^a-z0-9 ]", " ", (t or "").lower()).split()
+
+
+def title_matches(want, have):
+    """True when `have` (a board posting title) is the same role as `want`."""
+    w, h = _norm_match_title(want), _norm_match_title(have)
+    if not w or not h:
+        return False
+    if set(w) <= set(h) or set(h) <= set(w):
+        return True
+    return difflib.SequenceMatcher(None, " ".join(w), " ".join(h)).ratio() >= 0.75
+
+
+def _fetch_board(ats_name, url_tpl, extractor, slug):
+    try:
+        raw = fetch_url(url_tpl.format(slug=slug), timeout=6)
+        return extractor(json.loads(raw))
+    except Exception:
+        return None
+
+
+def resolve_company_board(company):
+    """Probe all public ATS APIs for a company. Returns (ats, postings) or (None, None)."""
+    for slug in company_slug_candidates(company):
+        for ats_name, url_tpl, extractor in ATS_PUBLIC_APIS:
+            postings = _fetch_board(ats_name, url_tpl, extractor, slug)
+            if postings:  # board exists and has live postings
+                return ats_name, postings
+    return None, None
+
+
+def resolve_ats_urls(items, cap, verbose):
+    """For aggregator-only items, try to recover the direct ATS posting URL via
+    public job-board APIs. Mutates items in place. Returns count resolved."""
+    agg_hosts = ("linkedin.com", "indeed.com", "glassdoor.com", "google.com", "ziprecruiter.com")
+
+    def is_agg(u):
+        m = re.search(r"https?://([^/]+)", (u or "").lower())
+        return bool(m) and any(h in m.group(1) for h in agg_hosts)
+
+    by_company = {}
+    for it in items:
+        if is_agg(it.get("url")) and (it.get("organization") or "").strip():
+            by_company.setdefault(it["organization"].strip(), []).append(it)
+
+    companies = list(by_company.keys())[:cap]
+    if not companies:
+        return 0
+    if verbose:
+        print(f"  ats-resolve: probing {len(companies)} companies "
+              f"({sum(len(by_company[c]) for c in companies)} aggregator-only items)", file=sys.stderr)
+
+    resolved = 0
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        boards = dict(zip(companies, pool.map(lambda c: resolve_company_board(c), companies)))
+
+    for company, (ats, postings) in boards.items():
+        if not postings:
+            continue
+        for it in by_company[company]:
+            for p_title, p_url in postings:
+                if p_url and title_matches(it.get("title"), p_title):
+                    it["url_aggregator"] = it["url"]
+                    it["url"] = p_url
+                    it["id"] = stable_id(it.get("organization"), it.get("title"), p_url)
+                    resolved += 1
+                    if verbose:
+                        print(f"    + {company[:30]:32s} -> {ats}: {p_url[:70]}", file=sys.stderr)
+                    break
+    if verbose:
+        print(f"  ats-resolve: {resolved} aggregator URLs upgraded to direct ATS links", file=sys.stderr)
+    return resolved
+
+
 # ───────────────────────── orchestrator ─────────────────────────
 
 def main():
@@ -492,6 +615,10 @@ def main():
     ap.add_argument("--no-jobspy", action="store_true")
     ap.add_argument("--no-github", action="store_true")
     ap.add_argument("--no-arbeitnow", action="store_true")
+    ap.add_argument("--no-ats-resolve", action="store_true",
+                    help="Skip the public ATS-API probe that upgrades aggregator URLs to direct links.")
+    ap.add_argument("--ats-resolve-cap", type=int, default=40,
+                    help="Max companies to probe per run (default 40).")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
@@ -529,13 +656,31 @@ def main():
         except Exception as e:
             print(f"  arbeitnow: {e}", file=sys.stderr)
 
-    # Cross-source dedup by URL, then by (company, normalised-title)
+    # Cross-source dedup by URL, then by (company, normalised-title).
+    # Sort first so entries with a direct ATS/company URL win over aggregator
+    # copies (linkedin/indeed/glassdoor pages) of the same job — the dedup
+    # keeps the first occurrence of each key.
+    AGGREGATOR_HOSTS = ("linkedin.com", "indeed.com", "glassdoor.com",
+                        "google.com", "ziprecruiter.com")
+
+    def _is_aggregator_url(u):
+        m = re.search(r"https?://([^/]+)", (u or "").lower())
+        return bool(m) and any(h in m.group(1) for h in AGGREGATOR_HOSTS)
+
+    def _norm_dedup_url(u):
+        u = (u or "").split("?", 1)[0].split("#", 1)[0].rstrip("/").lower()
+        for tail in ("/application", "/apply"):
+            if u.endswith(tail):
+                u = u[: -len(tail)].rstrip("/")
+        return u
+
+    all_items.sort(key=lambda it: _is_aggregator_url(it.get("url")))  # stable: direct first
     seen_url = set()
     seen_key = set()
     final = []
     cross_dropped = 0
     for it in all_items:
-        u = it.get("url") or ""
+        u = _norm_dedup_url(it.get("url"))
         if u and u in seen_url:
             cross_dropped += 1; continue
         ckey = ((it.get("organization") or "").lower().strip(),
@@ -544,6 +689,14 @@ def main():
             cross_dropped += 1; continue
         seen_url.add(u); seen_key.add(ckey)
         final.append(it)
+
+    # Upgrade aggregator URLs (linkedin/indeed pages) to direct ATS posting URLs
+    # by probing the public Greenhouse/Lever/Ashby/Workable/SmartRecruiters APIs.
+    if not args.no_ats_resolve:
+        try:
+            resolve_ats_urls(final, cap=args.ats_resolve_cap, verbose=verbose)
+        except Exception as e:
+            print(f"  ats-resolve: failed ({e}); continuing with aggregator URLs", file=sys.stderr)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(

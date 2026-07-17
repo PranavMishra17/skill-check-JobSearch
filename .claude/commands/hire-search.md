@@ -1,126 +1,72 @@
 ---
-description: Find people actively hiring for AI roles aligned with Pranav's profile. Combines LinkedIn hiring posts + AI/ML recruiters. Pass an age window (e.g. "5d") and/or a scope label (e.g. "founding", "india", "remote") in any order.
-argument-hint: [<Nd> | "india" | "founding" | "remote" | <custom> — any order, max 2 tokens]
-allowed-tools: Bash, Read, Edit, Write, mcp__Apify__call-actor, mcp__Apify__get-actor-output
+description: Find the humans who hire for the jobs in your latest /job-search crawl — recruiters, people/HR leads, hiring managers, founders (engineers only as a last resort) — with a real, SMTP-verified email for each. Zero Apify. Walks the top-scoring jobs of the most-recent job-search session, uses each job's metadata (company/role/team/location) to hunt the hiring team via the Brave Search API, then recovers emails via name+domain permutation + single-connection SMTP verification (+ GitHub commit emails for engineers). Pass an optional target count and/or a scope label.
+argument-hint: [<N> (target job count, default 50) | "founding" | "remote" | dry-run]
+allowed-tools: Bash, Read, Edit, Write
 ---
 
-You run the **hire-search** workflow inline in the main turn (sub-agents lack the parent's MCP access).
+You run **hire-search** inline in the main turn. It is now **fully off Apify** and reuses the `/job-search` crawl. See `docs/HIRE_SEARCH_RESEARCH.md` for scoping research and `scripts/hire_crawl.py` for the pipeline.
 
-## Output
+## What it does
 
-Each run appends a session to `E:\_Resume-Curator\job_search\jobs_ui\hires.js`. The user opens `jobs_ui/hires.html` and toggles between sessions.
+For the **latest** `/job-search` session (top-scoring jobs first), for each job it uses **only the job's metadata** (company, title, team, location — never the job URL) to find who hires there, in priority order:
+
+1. recruiter / talent acquisition
+2. head of people / HR leadership
+3. hiring manager / engineering lead
+4. founder / CEO / CTO (startups)
+5. engineers on/near that team — **last resort only** (GitHub commit authors)
+
+For every person it recovers a **real email**: GitHub commit-author email (exact) when available, else a name+domain permutation graded by a single-connection SMTP RCPT-TO probe (`verified | mx-ok-guess | catch-all | invalid`). It collects a **list of `--target` jobs (default 50) that each yielded ≥1 contact**, backfilling down the ranked list if the top-N don't reach the target.
+
+Output: prepends a session to `jobs_ui/hires.js` (dashboard reads it), writes an MD backup, updates `~/.job_search/state.json`.
+
+## Preflight (do FIRST)
+
+1. `jobs_ui/data.js` has at least one session. If not: tell the user to run `/job-search` first and STOP.
+2. Brave key present: env `BRAVE_API_KEY` **or** file `~/.job_search/brave_key.txt`. If neither and provider is not `searxng`:
+   - Tell the user: create a free key at https://api.search.brave.com/app/keys ("Data for Search" free tier — 2,000 queries/mo, no card), then `setx BRAVE_API_KEY <key>` or save it to `C:\Users\prana\.job_search\brave_key.txt`. STOP until provided.
+3. `dnspython` + `requests` importable (installed). Outbound port 25 is open here, so SMTP verification works locally.
 
 ## Arguments
 
-`$ARGUMENTS` may be empty or contain up to two tokens, in any order:
-
-### Parse step (do FIRST)
-
-Split `$ARGUMENTS` on whitespace. For each token:
-
-1. **Window token** — matches `^\d+[dwm]?$` (e.g. `5d`, `14d`, `2w`, `1m`):
-   - Convert to days: `Nd` → N, `Nw` → N×7, `Nm` → N×30
-   - This becomes `max_age_days` for hiring-post filtering.
-2. **Label token** — anything else:
-   - `india` → label `india`, set `locations: ["India"]`
-   - `founding` → label `founding`, prepend `["Founding Engineer", "Founding ML Engineer", "First AI Hire"]` to `jobRoles`
-   - `remote` → label `remote`, add `Remote` to `keywords`, broaden `locations` to `["United States", "Worldwide", "Remote"]`
-   - otherwise → label is the lowercased token, default scope params
-
-### Defaults
-- No window token → `max_age_days = 14`
-- No label token → `label = "us-ai"` and default scope params
-- Both missing → `5d` window with `us-ai` label
+Parse `$ARGUMENTS` (any order, all optional):
+- **Integer `<N>`** → `--target N` (jobs-with-contacts to collect; default 50).
+- **`dry-run`** → add `--dry-run`.
+- **`searxng`** → `--provider searxng` (keyless fallback; flaky/rate-limited — prefer Brave).
+- **Label token** (`founding`, `remote`, `india`, any word) → `--label <token>`. Default `us-ai`.
 
 Echo at start:
 ```
-[mode: hire-search] [label: founding] [max_age: 5d] [sources: apt_marble/linkedin-hiring-posts-scraper + linkedIn-recruiter-scraper]
+[mode: hire-search] [label: us-ai] [target: 50] [provider: brave] [source: latest /job-search session]
 ```
 
 ## Execute
 
-### Step A — call the hiring-posts scraper
-
-`mcp__Apify__call-actor` with `actor: "apt_marble/linkedin-hiring-posts-scraper"`:
-```json
-{
-  "hiringKeywords": ["we are hiring", "looking for", "now hiring", "join our team"],
-  "jobRoles": ["AI Engineer", "LLM Engineer", "Machine Learning Engineer",
-               "Founding Engineer", "Applied AI Engineer", "Agentic AI Engineer",
-               "Forward Deployed Engineer"],
-  "keywords": ["AI", "LLM", "agentic", "RAG"],
-  "locations": ["United States"],
-  "maxResults": 200,
-  "language": "en",
-  "deduplicateResults": true
-}
-```
-`callOptions: { memory: 1024, timeout: 600 }`, `previewOutput: false`.
-
-Apply label-specific adjustments per the Parse step above.
-
-### Step B — call the recruiter scraper
-
-`mcp__Apify__call-actor` with `actor: "apt_marble/linkedIn-recruiter-scraper"`:
-```json
-{
-  "recruiterTitles": ["Technical Recruiter", "AI Recruiter", "Engineering Recruiter",
-                      "Talent Acquisition", "Founding Team Recruiter",
-                      "Head of Talent", "Talent Lead"],
-  "keywords": ["AI", "machine learning", "LLM", "agentic"],
-  "locations": ["United States"],
-  "maxResults": 200,
-  "language": "en",
-  "deduplicateResults": true
-}
-```
-
-### Step C — fetch full datasets
-
-`mcp__Apify__get-actor-output` for each → wrap as `{"items": [...]}` → save to
-`~/.job_search/raw_hires/<date>_<label>_hiring_posts.json` and `~/.job_search/raw_hires/<date>_<label>_recruiters.json`.
-
-### Step D — score + write hires.js + archive
-
 ```bash
-python "scripts/hire_search.py" \
-  --hiring-posts "<path A>" \
-  --recruiters   "<path B>" \
-  --today "$(date -I)" \
-  --label "<label>" \
-  --max-age-days <N>
+python "scripts/hire_crawl.py" --today "$(date -I)" --label "<label>" --provider brave --target <N>
 ```
 
-The script:
-- Decodes LinkedIn activity IDs to post creation dates (`id >> 22` = unix seconds)
-- Drops posts older than `--max-age-days`
-- Recruiters bypass the date filter (standing presence)
-- Cross-refs companies against `jobs_ui/data.js` (badge + score boost on match)
-- Filters `Frontend Developers` niche
-- Dedups against `state.seen_hire_ids` and within-run
-- Scores 0–100 (company / role / title / intent / location)
-- Appends session to `hires.js` (newest first)
+Flags: `--contacts-per-job 2`, `--size-tier 120`, `--no-verify` (MX-only, faster), `--max-jobs 120`, `--session-id <id>`, `--dry-run`.
 
-### Step E — relay
+Relay the script's final summary verbatim (`contacts=… with-email=… verified=…`).
 
-Print the script's stdout verbatim. Then:
+## Cost / limits
 
-```
-✅ Done. Open in browser: file:///E:/_Resume-Curator/job_search/jobs_ui/hires.html
-```
+- **$0.** Brave free tier = 2,000 queries/month, 1 query/sec. A 50-job run ≈ 50–150 queries ≈ 2–3 min ≈ ~13 full runs/month.
+- SMTP verify adds ~1–3 s per person (single connection, early-exit).
 
 ## Rules
 
-- **Never fabricate.** Actor errors → surface verbatim.
-- **Allowlist:** only the two `apt_marble/*` actors.
-- **Cost ceiling ~$1.00 per run** (200 × $0.0025 × 2 actors).
-- **Do not regenerate `jobs_ui/hires.html`.** Static asset.
-- **Append-only `hires.js`.** Same session id (date + label) overwrites in place.
+- **Never fabricate.** A person is recorded only if a search result (LinkedIn or people-aggregator) or GitHub commit names them. Emails are `verified` only on a real SMTP `250`; guesses are graded `mx-ok-guess`, never shown as verified.
+- **Never scrape search engines directly.** Static + headless-browser scraping of Google/Bing/DDG is anti-bot-blocked (verified). Brave API or SearXNG JSON only.
+- **Do not visit the job posting URL** to find people — metadata only.
+- **Engineers are a last resort** — only when tiers 1–4 find nobody.
+- **Do not regenerate `jobs_ui/hires.html`.** Static asset (a one-time edit to render the email field is fine).
+- **Append-only `hires.js`.** Same session id overwrites in place.
 
 ## Examples
 
-- `/hire-search` → `us-ai` scope, 14-day post window
-- `/hire-search 5d` → `us-ai` scope, 5-day post window
-- `/hire-search 5d founding` (or `founding 5d`) → founding-engineer scope, 5-day window
-- `/hire-search 7d india` → India scope, 7-day window
-- `/hire-search remote` → remote scope, 14-day default window
+- `/hire-search` → top 50 jobs from latest session, Brave, label `us-ai`
+- `/hire-search 20` → target 20 jobs-with-contacts
+- `/hire-search dry-run 10` → print 10 jobs' contacts, write nothing
+- `/hire-search searxng 15` → keyless fallback, target 15

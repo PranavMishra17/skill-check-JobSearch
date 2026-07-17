@@ -266,6 +266,16 @@ with open(args.state, "r", encoding="utf-8") as f:
 seen = set(state.get("seen_job_ids", []))
 applied_lower = set(c.lower() for c in state["preferences"].get("applied_or_tracking", []))
 
+AGGREGATOR_HOSTS = ("linkedin.com", "indeed.com", "glassdoor.com",
+                    "google.com", "ziprecruiter.com")
+def is_aggregator_url(u):
+    m = re.search(r"https?://([^/]+)", (u or "").lower())
+    return bool(m) and any(h in m.group(1) for h in AGGREGATOR_HOSTS)
+
+# Direct-ATS entries first, so the (org, title) dedup below keeps the copy
+# with an appliable URL and drops the aggregator duplicate.
+items.sort(key=lambda it: is_aggregator_url(it.get("url")))
+
 scored, drop_counts = [], {}
 seen_keys = set()  # (org, normalised-title) to collapse multi-board duplicates
 for it in items:
@@ -273,7 +283,13 @@ for it in items:
     if reason:
         drop_counts[reason] = drop_counts.get(reason, 0) + 1
         continue
-    if days_since(it.get("date_posted")) > WINDOW_DAYS:
+    d_age = days_since(it.get("date_posted"))
+    if d_age < 0:
+        # Future-dated posting (bad aggregator data, e.g. LinkedIn ID-decode drift)
+        drop_counts["future-dated"] = drop_counts.get("future-dated", 0) + 1
+        continue
+    if d_age > WINDOW_DAYS:
+        # Also catches missing dates (days_since returns 999)
         drop_counts["out-of-window"] = drop_counts.get("out-of-window", 0) + 1
         continue
 
@@ -424,6 +440,8 @@ def html_session():
                 "title": (s["it"].get("title") or "").strip(),
                 "company": (s["it"].get("organization") or "").strip(),
                 "url": s["it"].get("url") or "",
+                "url_aggregator": s["it"].get("url_aggregator") or "",
+                "aggregator_only": is_aggregator_url(s["it"].get("url")),
                 "location": fmt_loc(s["it"]),
                 "arrangement": fmt_arrangement(s["it"]),
                 "salary": fmt_salary(s["it"]) or "",

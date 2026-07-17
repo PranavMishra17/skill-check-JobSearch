@@ -63,7 +63,7 @@ For each target `t` in `targets`:
 3. Parse the sub-agent's returned JSON (single object per contract in `.claude/agents/apply-driver.md`).
 
 4. **Immediately** update `~/.job_search/state.json`:
-   - Append `job_id` to `applied_ids` (create if absent) — for `applied` OR `captcha-pending` (both count as "attempted", we don't want to re-try them)
+   - Append `job_id` to `applied_ids` (create if absent) — for `applied`, `captcha-pending`, OR `pending-manual-upload` (all three count as "attempted", we don't want to re-try them)
    - Append a full record to `applied_log`:
      ```json
      {
@@ -72,7 +72,7 @@ For each target `t` in `targets`:
        "title":      "...",
        "url":        "...",
        "ats":        "...",
-       "status":     "applied|captcha-pending|failed|skipped",
+       "status":     "applied|captcha-pending|pending-manual-upload|failed|skipped",
        "score":      82,
        "cover":      "ai|ml|fullstack|none",
        "cover_reason": "required|weak-match-attach|strong-match-skip|textarea-only-skip",
@@ -98,10 +98,11 @@ At the end, print:
 
 ```
 [apply] complete — <k> attempted
-  ✓ applied:            <n>
-  ⚠ captcha-pending:    <n>  (tabs left open — you finish these)
-  ✗ failed:             <n>
-  ⏭ skipped by policy:  <n>  (blocked ATS / already applied / etc.)
+  ✓ applied:                 <n>
+  ⚠ captcha-pending:         <n>  (tabs left open — you solve captcha + submit)
+  📝 pending-manual-upload:  <n>  (tabs left open — Simplify didn't fire; you click resume + submit)
+  ✗ failed:                  <n>
+  ⏭ skipped by policy:       <n>  (unsupported ATS / EU-only role / already applied / etc.)
 
 Captcha-pending tabs (finish these manually):
   · <url>  (tabId <id>)
@@ -117,7 +118,7 @@ Include a link to the live dashboard so the user can flip through Applied / Dism
 ## Rules — /apply orchestrator
 
 - **Never fabricate** anything about Pranav. All facts come from the answer JSON, the reference docs, or `state.json` — enforced downstream in the sub-agent, but you validate the JSON before delegating.
-- **Never touch** LinkedIn, Workday, iCIMS, or Indeed URLs. The selector script already excludes these; do not add them back.
+- **URL policy.** The crawler resolves `job_url_direct` at crawl time, so listings carry the real ATS/company URL whenever one exists. Aggregator URLs (LinkedIn / Indeed / Glassdoor / ZipRecruiter) and brittle ATS (Workday / iCIMS) are hard-excluded by the selector — verified dead-ends (LinkedIn 2FA walls, Indeed no-external-link). Those jobs stay visible in the dashboard for manual applies. Custom company career pages remain valid targets — the sub-agent navigates first, then classifies the landing page and makes a best-effort pass.
 - **Never do more than 30 apps per run.** Hard cap.
 - **Never solve CAPTCHAs.** The sub-agent leaves those tabs open; you just record and move on.
 - **Cost:** $0 (no APIs). Time budget ~4 min average per target with the 15-second-optional rule; 5 apps ≈ 20 min end-to-end.

@@ -37,6 +37,9 @@ build/
 # Local environment
 .env
 .env.local
+# Brave Search API key — belongs in ~/.job_search/, never in the repo
+brave_key.txt
+**/brave_key.txt
 
 # Original source assets (the .jpeg before we copied it to jobs_ui/)
 Disco.jpeg

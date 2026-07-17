@@ -21,25 +21,35 @@ from pathlib import Path
 # Workday and iCIMS excluded — too brittle to auto-apply reliably.
 # LinkedIn excluded — aggressive bot detection.
 SUPPORTED_ATS = {
-    "greenhouse.io":     "greenhouse",
+    "greenhouse.io":            "greenhouse",
     "job-boards.greenhouse.io": "greenhouse",
-    "boards.greenhouse.io": "greenhouse",
-    "jobs.ashbyhq.com":  "ashby",
-    "ashbyhq.com":       "ashby",
-    "jobs.lever.co":     "lever",
-    "lever.co":          "lever",
-    "workable.com":      "workable",
-    "apply.workable.com":"workable",
-    "jobs.workable.com": "workable",
-    "smartrecruiters.com": "smartrecruiters",
+    "boards.greenhouse.io":     "greenhouse",
+    "job-boards.eu.greenhouse.io": "greenhouse",
+    "boards.eu.greenhouse.io":  "greenhouse",
+    "jobs.ashbyhq.com":         "ashby",
+    "ashbyhq.com":              "ashby",
+    "jobs.lever.co":            "lever",
+    "lever.co":                 "lever",
+    "workable.com":             "workable",
+    "apply.workable.com":       "workable",
+    "jobs.workable.com":        "workable",
+    "smartrecruiters.com":      "smartrecruiters",
     "jobs.smartrecruiters.com": "smartrecruiters",
 }
+# Hard-excluded from /apply picks. Verified 2026-07-15: LinkedIn URLs hit 2FA
+# login walls in the MCP Chromium (5/5 skipped), Indeed pages have no external
+# apply link (1/1 skipped), Workday/iCIMS are too brittle to auto-drive.
+# These jobs stay visible in the dashboard UI — they're only excluded here.
+# The crawler now resolves job_url_direct at crawl time, so any listing still
+# carrying an aggregator URL has no known direct URL.
 BLOCKED_ATS = {
     "linkedin.com":           "linkedin",
     "myworkdayjobs.com":      "workday",
     "workday.com":            "workday",
     "icims.com":              "icims",
-    "indeed.com":             "indeed",  # Indeed apply is inconsistent; skip
+    "indeed.com":             "indeed",
+    "glassdoor.com":          "glassdoor",
+    "ziprecruiter.com":       "ziprecruiter",
 }
 
 
@@ -55,6 +65,21 @@ def classify_url(url):
         if pat in domain:
             return f"BLOCKED:{ats}"
     return "unsupported"
+
+
+def normalize_url_for_dedup(u):
+    """Strip trailing /application, /apply, query params, hash, trailing slash — for dedup only."""
+    if not u: return ""
+    u = u.split("?", 1)[0].split("#", 1)[0].rstrip("/")
+    for tail in ("/application", "/apply", "/apply-online", "/applications/new"):
+        if u.lower().endswith(tail):
+            u = u[: -len(tail)].rstrip("/")
+            break
+    return u.lower()
+
+
+def normalize_title_for_dedup(t):
+    return re.sub(r"[^a-z0-9]+", " ", (t or "").lower()).strip()
 
 
 def parse_data_js(path):
@@ -89,12 +114,13 @@ def main():
     applied_companies = {c.lower() for c in state.get("preferences", {}).get("applied_or_tracking", [])}
     already_attempted = set(state.get("applied_ids", []))  # created lazily by /apply
 
-    supported, skipped_by_ats, skipped_below_score, skipped_applied = [], {}, 0, 0
+    candidates, skipped_ats_stats, skipped_below_score, skipped_applied = [], {}, 0, 0
     for j in session.get("jobs", []):
         ats = classify_url(j.get("url"))
-        if ats is None or ats == "unsupported" or ats.startswith("BLOCKED:"):
-            skipped_by_ats.setdefault(ats or "no-url", 0)
-            skipped_by_ats[ats or "no-url"] += 1
+        skipped_ats_stats.setdefault(ats or "no-url", 0)
+        skipped_ats_stats[ats or "no-url"] += 1
+
+        if ats is None or ats.startswith("BLOCKED:"):
             continue
         if j.get("score", 0) < args.min_score:
             skipped_below_score += 1
@@ -109,7 +135,7 @@ def main():
         if jid in already_attempted:
             skipped_applied += 1; continue
 
-        supported.append({
+        candidates.append({
             "job_id": jid,
             "rank": j.get("rank"),
             "score": j.get("score"),
@@ -121,28 +147,47 @@ def main():
             "salary": j.get("salary"),
             "posted": j.get("posted"),
             "description": j.get("description"),
-            "ats": ats,
+            "ats_at_url": ats,  # what the URL host looked like; sub-agent may find a different landing
         })
 
-    supported.sort(key=lambda x: -(x["score"] or 0))
-    # If --top-n is set, it is the primary cut (absolute count).
-    # Otherwise fall back to --top-percent of the supported list.
+    # Sort: supported ATS first (score desc), then unsupported (custom career
+    # sites — sub-agent makes a best-effort pass). Aggregators never get here.
+    def tier(c):
+        a = c.get("ats_at_url") or "no-url"
+        return 2 if a in ("no-url", "unsupported") else 1
+    candidates.sort(key=lambda x: (tier(x), -(x["score"] or 0)))
+
+    # Dedup by normalized URL AND by (company, normalized-title) — catches Ashby /application
+    # variants and cross-source reposts (e.g. Jobgether wrapping a Quora Ashby URL).
+    seen_urls, seen_title_company, deduped = set(), set(), []
+    dropped_dupes = 0
+    for c in candidates:
+        nu = normalize_url_for_dedup(c["url"])
+        tc = ((c.get("company") or "").lower().strip(), normalize_title_for_dedup(c.get("title")))
+        if nu in seen_urls or tc in seen_title_company:
+            dropped_dupes += 1
+            continue
+        seen_urls.add(nu); seen_title_company.add(tc)
+        deduped.append(c)
+
     if args.top_n:
         cut = args.top_n
     else:
-        cut = max(1, int(round(len(supported) * args.top_percent / 100)))
-    picked = supported[:cut]
+        cut = max(1, int(round(len(deduped) * args.top_percent / 100)))
+    picked = deduped[:cut]
 
     out = {
         "session_id":   session["id"],
         "session_date": session["date"],
         "session_window": session["window"],
         "session_total_surfaced": len(session.get("jobs", [])),
-        "supported_in_session": len(supported),
+        "eligible_after_filters": len(candidates),
+        "unique_after_dedup": len(deduped),
+        "dupes_dropped": dropped_dupes,
         "picked_count": len(picked),
         "min_score_floor": args.min_score,
         "top_percent": args.top_percent,
-        "skipped_by_ats": skipped_by_ats,
+        "ats_distribution": skipped_ats_stats,
         "skipped_below_score": skipped_below_score,
         "skipped_already_applied": skipped_applied,
         "targets": picked,
